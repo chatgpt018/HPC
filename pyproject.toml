@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "market-intelligence-hpc-local"
+version = "0.5.0"
+description = "AI-Powered Market Intelligence & Document Analysis using RAG + HPC on AWS (local-first engineering release v0.5)"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+ "gradio>=6,<7",
+ "numpy==1.26.4; python_version == '3.11'",
+ "numpy>=1.26,<3; python_version != '3.11'",
+ "pandas==2.2.3; python_version == '3.11'",
+ "pandas>=2.2,<4; python_version != '3.11'",
+ "scikit-learn>=1.4,<2",
+ "PyMuPDF>=1.24,<2", "python-docx>=1.1,<2", "plotly>=5.20,<7"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+hpc = ["mpi4py>=4,<5"]
+
+[tool.setuptools.packages.find]
+include = ["marketintel*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

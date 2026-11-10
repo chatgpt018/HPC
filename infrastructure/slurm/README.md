@@ -1,0 +1,15 @@
+# Slurm templates — NOT deployed
+
+These are **review-only starting points** for your future AWS ParallelCluster / Slurm environment. They do not create AWS infrastructure or a database.
+
+- `similarity.sbatch` and `clustering.sbatch` request **two nodes and four tasks**; adjust based on quotas and budget.
+- They assume a preconfigured Python environment with matching `mpi4py` / MPI runtime, and a shared filesystem containing the `.npz` dataset.
+- `srun --mpi=pmix` depends on Slurm's PMI/PMIx build. Verify `srun --mpi=list` on the real cluster and adjust accordingly.
+- Verify `SLURM_NTASKS`, host allocations, actual rank evidence and correctness after execution.
+- Submission syntax (once environment is ready):
+
+```bash
+sbatch --export=ALL,DATASET=/shared/inputs/reports.npz,RESULT=/shared/results/similarity.json infrastructure/slurm/similarity.sbatch
+```
+
+Only after testing should the student wire actual job submissions, authentication, status tracking and S3 transfers. **No database is provisioned or configured by this package.**

@@ -1,0 +1,71 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Understand the project · Market Intelligence HPC</title>
+<style>
+:root{--bg:#f7f9f8;--ink:#142e38;--muted:#50646a;--accent:#137c76;--line:#dce7e5;--card:white}
+*{box-sizing:border-box}body{margin:0;font:16px/1.65 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+.layout{display:grid;grid-template-columns:248px minmax(0,850px);justify-content:center;gap:36px;margin:0 auto;max-width:1210px;padding:32px 24px}
+aside{position:sticky;top:26px;align-self:start;border:1px solid var(--line);border-radius:13px;padding:18px;background:var(--card)}
+small,.muted{color:var(--muted)}h1{font-size:2.05rem;line-height:1.22;letter-spacing:-.04em}h2{margin-top:48px;letter-spacing:-.03em}h3{margin-top:30px}
+nav a{display:block;color:var(--ink);padding:7px 9px;text-decoration:none;border-radius:7px;font-size:.92rem}nav a:hover{background:#e3f2ed;color:#095e59}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin:18px 0}
+.key{font-weight:700;color:#0a736b}code,pre{background:#eef4f3;border-radius:5px;padding:2px 5px}pre{padding:18px;overflow-x:auto;line-height:1.6}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.node{display:inline-block;padding:9px 12px;background:#ebf5f2;border:1px solid #bfded7;border-radius:9px;font-weight:600}.arrow{color:var(--accent);font-weight:800}
+.notice{background:#e8f4ef;border-left:4px solid var(--accent);padding:14px;border-radius:6px}details{padding:15px 0;border-bottom:1px solid var(--line)}summary{cursor:pointer;font-weight:600}
+button{font:inherit;border:0;color:white;background:var(--accent);padding:10px 18px;border-radius:8px;cursor:pointer}input{padding:9px;border:1px solid #a7b7b4;border-radius:8px;width:100%;max-width:280px}
+@media(max-width:800px){.layout{display:block;padding:18px}aside{position:static;margin-bottom:18px}}
+</style></head><body><div class="layout"><aside>
+<strong>PROJECT NOTEBOOK</strong><p class="muted">A beginner-first explanation of the <em>actual local baseline</em>.</p>
+<nav><a href="#overview">1 · What are we building?</a><a href="#architecture">2 · Architecture</a><a href="#documents">3 · Reports and RAG</a>
+<a href="#mpi">4 · MPI and HPC</a><a href="#experiment">5 · Benchmarking</a><a href="#code">6 · Code folders</a>
+<a href="#aws">7 · AWS later</a><a href="#viva">8 · Viva questions</a></nav></aside><main>
+<p class="key">FOURTH-YEAR PROJECT LEARNING GUIDE</p>
+<h1>AI-Powered Market Intelligence & Document Analysis using RAG + HPC on AWS</h1>
+<p class="muted">This guide matches the separate cleaned local project; it does not claim that AWS is deployed.</p>
+<section id="overview" class="card"><h2 style="margin-top:0">1. What are we building?</h2>
+<p>A web tool that reads market reports, finds relevant evidence, computes relationships between documents, and helps researchers interpret those relationships.</p>
+<p><strong>Input:</strong> PDF/DOCX/CSV reports. <strong>Output:</strong> cited passages, similarity scores, clusters, honest performance measurements.</p>
+<p class="notice">Document similarity does not mean future market growth. We must not present a cluster as a prediction.</p></section>
+<section id="architecture" class="card"><h2 style="margin-top:0">2. Actual local architecture</h2>
+<div class="flow"><span class="node">Uploaded reports</span><span class="arrow">→</span><span class="node">Text + source locations</span><span class="arrow">→</span><span class="node">Saved chunks</span></div>
+<p>From there, the user can ask questions <em>or</em> perform numerical analysis:</p>
+<div class="flow"><span class="node">Chunks</span><span class="arrow">→</span><span class="node">TF-IDF retrieval</span><span class="arrow">→</span><span class="node">Sources / optional local LLM</span></div>
+<div class="flow"><span class="node">Chunks</span><span class="arrow">→</span><span class="node">Document feature vectors</span><span class="arrow">→</span><span class="node">Sequential / real MPI</span><span class="arrow">→</span><span class="node">Results</span></div>
+<p><strong>Why are there two paths?</strong> Retrieval answers evidence questions. The numerical path computes similarities and clusters. It is not necessary to run HPC for every question.</p></section>
+<section id="documents" class="card"><h2 style="margin-top:0">3. How document question-answering works</h2>
+<ol><li>Validate PDF, DOCX or CSV.</li><li>Extract text while saving page or row location.</li><li>Divide into chunks to find relevant passages.</li><li>Use TF-IDF to retrieve relevant chunks in the default local mode.</li><li>Show sources. If Ollama is configured, send the evidence to the local LLM for an answer.</li></ol>
+<p><strong>RAG:</strong> Retrieval-Augmented Generation. Full RAG needs both retrieval and an actual generation model. With Ollama turned off, this app uses evidence retrieval without generation.</p>
+<p>Optional: use a downloaded local sentence-transformer for neural embeddings. A hashing or TF-IDF representation is not the same as a transformer embedding.</p></section>
+<section id="mpi" class="card"><h2 style="margin-top:0">4. Why HPC and how MPI works</h2>
+<p><strong>HPC:</strong> High-Performance Computing. <strong>MPI:</strong> Message Passing Interface, which coordinates independently executing processes.</p>
+<p>Comparing N documents with one another requires roughly N² comparisons. The dimension d of each vector also contributes to cost, approximately O(N²d).</p>
+<div class="flow"><span class="node">Input vectors</span><span class="arrow">→</span><span class="node">MPI rank 0</span><span class="node">MPI rank 1</span><span class="node">MPI rank 2</span><span class="arrow">→</span><span class="node">Gather matches</span></div>
+<p>Each rank computes its own range of document rows. That is genuine MPI only when ranks are launched by <code>mpiexec</code> and communicate using <code>mpi4py</code>.</p>
+<p>Distributed K-Means is more collaborative: each rank assigns its local points, then <code>Allreduce</code> combines local cluster sums/counts and every rank receives the updated centroids.</p>
+<p><strong>Ubuntu on Windows?</strong> WSL2 allows a Linux MPI runtime without replacing Windows. The final AWS cluster uses a similar Linux/MPI setup.</p></section>
+<section id="experiment" class="card"><h2 style="margin-top:0">5. How to prove it</h2>
+<p>Run the same dataset with sequential code and with real MPI ranks. Check both answers match. Then compare execution times. Process launch and communication can make small jobs slower.</p>
+<div class="flow"><span class="node">Same input</span><span class="arrow">→</span><span class="node">Sequential timer</span><span class="node">MPI timer</span><span class="arrow">→</span><span class="node">Correctness + speedup</span></div>
+<p><strong>Try the speedup calculator</strong> (example values you enter, never project measurements):</p>
+<label>Sequential seconds <input id="t1" type="number" min="0.001" value="12" step="0.001"></label><br>
+<label>MPI seconds <input id="tp" type="number" min="0.001" value="5" step="0.001"></label><br>
+<label>MPI processes <input id="n" type="number" min="1" value="4" step="1"></label><br><br>
+<button onclick="calc()">Calculate example</button><p id="calc"></p></section>
+<section id="code" class="card"><h2 style="margin-top:0">6. Which folder does what?</h2>
+<dl><dt><code>marketintel/documents.py</code></dt><dd>Reads reports and preserves source locations.</dd>
+<dt><code>marketintel/vectors.py</code></dt><dd>Transforms real uploaded text to document vectors.</dd>
+<dt><code>marketintel/analysis.py</code></dt><dd>Reference sequential mathematical algorithms.</dd>
+<dt><code>marketintel/mpi_tasks.py</code></dt><dd>Actual MPI communicator calls.</dd>
+<dt><code>marketintel/jobs.py</code></dt><dd>Starts real local MPI jobs only when a launcher exists.</dd>
+<dt><code>marketintel/rag.py</code></dt><dd>Evidence retrieval plus optional Ollama generation.</dd>
+<dt><code>marketintel/ui.py</code></dt><dd>Four clean application sections.</dd></dl></section>
+<section id="aws" class="card"><h2 style="margin-top:0">7. What changes for AWS?</h2>
+<p>Today this package is <strong>local-first</strong>. For final deployment: use S3 for data; Bedrock for retrieval/generation; deploy a secured containerized web app; use ParallelCluster/Slurm to schedule MPI jobs on EC2; send results back through managed storage.</p>
+<p class="notice">AWS deployment, budgets, permissions and public security are separate tasks. This learning website performs no cloud actions.</p></section>
+<section id="viva" class="card"><h2 style="margin-top:0">8. Viva practice</h2>
+<details><summary>Why MPI instead of ordinary Python?</summary><p>MPI communicates between independently executing processes and can scale across machines. It is helpful for large partitionable mathematical workloads when overhead is justified.</p></details>
+<details><summary>Is TF-IDF the same as neural embeddings?</summary><p>No. TF-IDF uses term statistics; an optional local sentence-transformer creates contextual neural representations.</p></details>
+<details><summary>How do we know clustering is really distributed?</summary><p>Each MPI rank computes assignments for disjoint rows; Allreduce aggregates sufficient statistics to update global centroids; actual rank logs and correctness tests confirm the result.</p></details>
+<details><summary>Did we deploy on AWS?</summary><p>Not in this local baseline. AWS provisioning and runtime verification are still required for final submission.</p></details>
+<details><summary>Is speedup guaranteed?</summary><p>No. The workload must outweigh process launch and communication overhead; negative speedup can be reported honestly.</p></details></section>
+<p class="muted">See README.md and docs/DEMONSTRATION_AND_VIVA.md for more details. This guide is deliberately separate from application files.</p>
+</main></div><script>function calc(){let t=+document.getElementById('t1').value,p=+document.getElementById('tp').value,n=+document.getElementById('n').value;document.getElementById('calc').textContent=(t>0&&p>0&&n>=1)?`Example speedup: ${(t/p).toFixed(3)}×; example parallel efficiency: ${(100*t/p/n).toFixed(1)}%.`:'Enter valid positive values.'}</script></body></html>

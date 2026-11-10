@@ -1,0 +1,7 @@
+market,year,value,unit,region,currency
+SYNTHETIC SOLAR,2022,100,index points,Example Region,EXAMPLE
+SYNTHETIC SOLAR,2023,110,index points,Example Region,EXAMPLE
+SYNTHETIC SOLAR,2024,125,index points,Example Region,EXAMPLE
+SYNTHETIC BATTERY,2022,80,index points,Example Region,EXAMPLE
+SYNTHETIC BATTERY,2023,95,index points,Example Region,EXAMPLE
+SYNTHETIC BATTERY,2024,108,index points,Example Region,EXAMPLE
