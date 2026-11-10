@@ -14,8 +14,10 @@ from .ui_actions import (
     inspect_result, result_chart, benchmark_options, show_benchmark,
     display_market_metrics, explain_saved_result, download_brief, download_result,
     _latest_results, workspace_quality, import_practice_collection, compute_preview,
+    document_options, document_overview, analysis_guidance,
 )
 from .ui_theme import TITLE, CSS, MASTHEAD, WORKFLOW, OVERVIEW_CARDS, HPC_STEPS, FOOTER
+from .storage import records
 
 
 def page_intro(number: str, eyebrow: str, title: str, description: str) -> None:
@@ -60,7 +62,7 @@ def build() -> gr.Blocks:
 
             with gr.Tab('02  Documents & AI', id='documents'):
                 page_intro('02', 'DOCUMENT INTELLIGENCE', 'Bring your research. Find the evidence.',
-                           'Import documents once, then ask questions and inspect the exact passages supporting the response.')
+                           'Index a document, read its extracted text, then ask about a topic you can see in it.')
                 with gr.Row(equal_height=False):
                     with gr.Column(scale=5, min_width=280):
                         gr.Markdown('#### 01 / Add your source documents')
@@ -81,19 +83,39 @@ def build() -> gr.Blocks:
                     with gr.Column(scale=7, min_width=360):
                         gr.Markdown('#### 02 / Indexed library')
                         documents = gr.Dataframe(
-                            headers=['Source document', 'Industry', 'Chunks', 'Document ID'],
-                            datatype=['str', 'str', 'number', 'str'],
-                            interactive=False, wrap=True,
+                            headers=['Source document', 'Industry', 'Passages'],
+                            datatype=['str', 'str', 'number'],
+                            interactive=False, wrap=False, column_widths=['65%', '20%', '15%'],
                         )
                         document_refresh = gr.Button('↻ Refresh document list', size='sm', variant='secondary')
-                        document_refresh.click(table_documents, outputs=documents)
-                        app.load(table_documents, outputs=documents)
-                        gr.HTML('<div class="mi-tip">Each indexed excerpt retains a document ID and source location. '
-                                'No invented reports or market figures are inserted.</div>')
-                upload_btn.click(upload, inputs=[uploads, industry], outputs=[log, documents])
-                demo_btn.click(import_practice_collection, outputs=[log, documents])
+                        gr.HTML('<div class="mi-tip">Passages are pieces of extracted text, not page counts. '
+                                'Every passage keeps its source location and document ID.</div>')
+                gr.Markdown('#### 03 / Read what was extracted')
+                indexed = [(d['filename'], d['doc_id']) for d in records()]
+                selected_id = indexed[-1][1] if indexed else None
+                document_choice = gr.Dropdown(choices=indexed, value=selected_id,
+                                              label='Indexed document to inspect')
+                preview = gr.HTML(document_overview(selected_id))
+
+                def refresh_document_view():
+                    return table_documents(), document_options(), document_overview()
+
+                def index_and_preview(files, sector):
+                    feedback, rows = upload(files, sector)
+                    return feedback, rows, document_options(), document_overview()
+
+                def practice_and_preview():
+                    feedback, rows = import_practice_collection()
+                    return feedback, rows, document_options(), document_overview()
+
+                document_refresh.click(refresh_document_view, outputs=[documents, document_choice, preview])
+                app.load(refresh_document_view, outputs=[documents, document_choice, preview])
+                upload_btn.click(index_and_preview, inputs=[uploads, industry],
+                                 outputs=[log, documents, document_choice, preview])
+                demo_btn.click(practice_and_preview, outputs=[log, documents, document_choice, preview])
+                document_choice.change(document_overview, inputs=document_choice, outputs=preview)
                 gr.Markdown('---')
-                gr.Markdown('#### 03 / Ask a question about your sources')
+                gr.Markdown('#### 04 / Ask about a topic in the document')
                 with gr.Row(equal_height=False):
                     with gr.Column(scale=7):
                         question = gr.Textbox(
@@ -112,16 +134,21 @@ def build() -> gr.Blocks:
                         gr.HTML('<div class="mi-tip"><strong>How to read an answer</strong><br>'
                                 '1. Read the response.<br>2. Check the supporting excerpts.<br>'
                                 '3. Open the cited source before making a market claim.</div>')
-                answer_output = gr.Markdown(label='Answer / evidence summary')
+                answer_output = gr.Markdown('Choose a topic from the document overview above, then click Find evidence.')
                 gr.Markdown('#### Retrieved evidence')
                 evidence_output = gr.Dataframe(
                     headers=['Document', 'Source location', 'Relevance', 'Excerpt'],
                     datatype=['str', 'str', 'number', 'str'], interactive=False, wrap=True,
+                    column_widths=['250px', '120px', '90px', '600px'], visible=False,
                 )
-                ask_btn.click(ask, inputs=[question, gen], outputs=[answer_output, evidence_output])
-                question.submit(ask, inputs=[question, gen], outputs=[answer_output, evidence_output])
+                def find_and_show(question_text, use_model):
+                    summary, rows = ask(question_text, use_model)
+                    return summary, gr.update(value=rows, visible=bool(rows))
 
-            with gr.Tab('03  HPC Analytics', id='hpc'):
+                ask_btn.click(find_and_show, inputs=[question, gen], outputs=[answer_output, evidence_output])
+                question.submit(find_and_show, inputs=[question, gen], outputs=[answer_output, evidence_output])
+
+            with gr.Tab('03  HPC Analytics', id='hpc') as hpc_tab:
                 page_intro('03', 'COMPUTATIONAL ANALYSIS', 'From reports to measurable relationships',
                            'Calculate exact document similarity or clusters using features derived from uploaded reports. '
                            'Choose real MPI only when a working MPI runtime is installed.')
@@ -140,15 +167,18 @@ def build() -> gr.Blocks:
                         )
                         mode = gr.Radio(['Sequential', 'Real MPI'], value='Sequential', label='Execution method')
                         with gr.Row():
-                            count = gr.Slider(1, 10, value=3, step=1, label='Top-k neighbours / cluster count')
-                            procs = gr.Slider(2, 8, value=2, step=1, label='MPI processes (when selected)')
+                            count = gr.Slider(1, 10, value=3, step=1, label='Top matches per document')
+                            procs = gr.Slider(2, 8, value=2, step=1, label='MPI processes', visible=False)
                         with gr.Accordion('Vector representation', open=False):
                             vector_mode = gr.Radio(
                                 ['hashing', 'semantic'], value='hashing', label='Numerical input',
                             )
                             gr.Markdown('**Hashing:** reproducible lexical features. **Semantic:** requires an '
                                         'already installed local neural model. These are not interchangeable.')
-                        start = gr.Button('Run computed analysis', variant='primary')
+                        initial_guidance, _ = analysis_guidance('Exact similarity · top-k', 3, 'Sequential')
+                        guidance = gr.Markdown(initial_guidance, elem_id='mi-analysis-guidance')
+                        start = gr.Button('Run computed analysis', variant='primary',
+                                          interactive=len(indexed) >= 2)
                     with gr.Column(scale=5):
                         gr.HTML('''<div class="mi-warning"><strong>Computation integrity</strong><br>
                         • Sequential mode never claims MPI execution.<br>
@@ -160,15 +190,33 @@ def build() -> gr.Blocks:
                                     '**Clustering:** groups of document features, not predicted industry performance.  '
                                     '**Performance:** actual elapsed computation time; multi-rank benchmarking requires the MPI runtime.')
                 gr.Markdown('#### Analysis output')
-                report = gr.Markdown()
+                report = gr.Markdown('A result table will appear here after a valid run.')
                 show = gr.Dataframe(
                     headers=['Source document', 'Match / cluster', 'Score'],
-                    interactive=False, wrap=True,
+                    interactive=False, wrap=True, visible=False,
                 )
                 with gr.Accordion('Technical run receipt · provenance and process metadata', open=False):
                     metadata = gr.Code(label='Actual run metadata', language='json')
+                def run_and_show(*settings):
+                    summary, rows, receipt = run_analysis(*settings)
+                    return summary, gr.update(value=rows, visible=bool(rows)), receipt
+
+                for control in (operation, count, mode):
+                    control.change(analysis_guidance, inputs=[operation, count, mode],
+                                   outputs=[guidance, start])
+                hpc_tab.select(analysis_guidance, inputs=[operation, count, mode],
+                               outputs=[guidance, start])
+                app.load(analysis_guidance, inputs=[operation, count, mode],
+                         outputs=[guidance, start])
+                operation.change(
+                    lambda choice: gr.update(label='Number of groups' if choice == 'K-Means clustering'
+                                             else 'Top matches per document'),
+                    inputs=operation, outputs=count,
+                )
+                mode.change(lambda choice: gr.update(visible=choice == 'Real MPI'),
+                            inputs=mode, outputs=procs)
                 start.click(
-                    run_analysis,
+                    run_and_show,
                     inputs=[operation, mode, procs, count, vector_mode],
                     outputs=[report, show, metadata],
                 )

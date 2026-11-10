@@ -63,7 +63,7 @@ HPC_STEPS = '''
 <div class="mi-mini-flow" aria-label="HPC job pipeline">
   <span><b>01</b> Document vectors</span>
   <span>→</span>
-  <span><b>02</b> MPI partitions</span>
+  <span><b>02</b> Choose execution</span>
   <span>→</span>
   <span><b>03</b> Numerical results</span>
   <span>→</span>
@@ -119,6 +119,9 @@ html, body {background:var(--mi-canvas)!important}
 #mi-nav [role=tab].selected{color:#145f5e!important;background:#e5f1eb!important;box-shadow:inset 0 -3px 0 #1f7d74!important}
 .gradio-container .header-table th.header-cell{background:#e8f1ee!important;color:#17343d!important;border-color:#d2e2dc!important}
 .gradio-container .header-table th.header-cell *{color:#17343d!important}
+.gradio-container .virtual-body .virtual-row{background:#ffffff!important;border-bottom:1px solid #dce4e2!important;color:#17343d!important}
+.gradio-container .virtual-body .virtual-row:nth-of-type(even){background:#f2f7f4!important}
+.gradio-container .virtual-body .body-cell,.gradio-container .virtual-body .body-cell *{color:#17343d!important}
 .gradio-container table.file-preview tr.file{background:#e8f1ee!important;color:#17343d!important}
 .gradio-container table.file-preview td.filename *{color:#17343d!important}
 .mi-page-header{padding:5px 0 16px}
@@ -143,9 +146,20 @@ html, body {background:var(--mi-canvas)!important}
 .mi-mini-flow span{color:#38565b!important}
 .mi-mini-flow b{color:#ba7f51;margin-right:6px}
 .mi-tip{background:#e9f3ee;border-left:3px solid #287f72;border-radius:6px;padding:10px 14px;font-size:12px;color:#315850}
+.mi-doc-overview{background:#fff;border:1px solid var(--mi-border);border-left:4px solid var(--mi-teal);border-radius:10px;padding:17px 20px;color:var(--mi-ink)}
+.mi-doc-overview h4{font-size:17px;line-height:1.35;color:var(--mi-ink);margin:0 0 10px;overflow-wrap:anywhere}
+.mi-doc-overview h5{font-size:12px;color:var(--mi-teal);margin:15px 0 8px}
+.mi-doc-overview p{font-size:12px;line-height:1.55;color:#38565b;margin:6px 0}
+.mi-source-preview{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mi-source-preview li{background:#f2f7f4;border:1px solid var(--mi-border);border-radius:8px;padding:11px;min-width:0;overflow-wrap:anywhere}
+.mi-source-preview li strong{font-size:11px;color:var(--mi-teal)}
+.mi-source-preview li p{margin:5px 0 0}
+.mi-questions{margin:0;padding-left:18px;font-size:12px;line-height:1.6;color:var(--mi-ink)}
+#mi-analysis-guidance{background:#e9f3ee;border-left:3px solid #287f72;border-radius:6px;padding:9px 12px;color:var(--mi-ink)}
+#mi-analysis-guidance *{color:var(--mi-ink)!important}
 .mi-warning{background:#fbf3e9;border-left:3px solid #c89257;border-radius:6px;padding:10px 14px;font-size:12px;color:#765b3b}
 .mi-footer{border-top:1px solid var(--mi-border);margin-top:24px;padding:16px 2px 8px;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;font-size:10px;letter-spacing:.06em;color:#89969a}
 .gradio-container .primary{font-weight:650!important}
-@media(max-width:800px){.mi-hero-main{grid-template-columns:1fr}.mi-hero-aside{display:none}.mi-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.mi-split{grid-template-columns:1fr}.mi-workflow{flex-wrap:wrap}.mi-workflow-arrow{display:none}}
+@media(max-width:800px){.mi-hero-main{grid-template-columns:1fr}.mi-hero-aside{display:none}.mi-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.mi-split{grid-template-columns:1fr}.mi-workflow{flex-wrap:wrap}.mi-workflow-arrow{display:none}.mi-source-preview{grid-template-columns:1fr}}
 @media(max-width:500px){.gradio-container{padding:9px!important}.mi-hero-top{padding:14px 15px}.mi-hero-main{padding:22px 17px}.mi-full-title{padding:11px 17px}.mi-kpis{gap:7px}.mi-kpi{padding:12px}.mi-environment{font-size:8px}.mi-brand-detail{display:none}}
 '''

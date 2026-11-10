@@ -67,8 +67,101 @@ def upload(files, industry: str):
 
 
 def table_documents():
-    return [[d['filename'],d['industry'],d['chunk_count'],d['doc_id']]
+    return [[d['filename'],d['industry'],d['chunk_count']]
             for d in records()]
+
+
+def document_options():
+    """Select the newest indexed document without exposing local file paths."""
+    documents = records()
+    return gr.update(
+        choices=[(d['filename'], d['doc_id']) for d in documents],
+        value=documents[-1]['doc_id'] if documents else None,
+    )
+
+
+def document_overview(doc_id: str | None = None) -> str:
+    """Show literal source excerpts and terms, never an invented PDF summary."""
+    from collections import Counter
+    from html import escape
+    import re
+    from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+    documents = records()
+    if not documents:
+        return '<div class="mi-doc-overview">Index a PDF, Word or CSV file to preview its extracted text here.</div>'
+    selected = next((d for d in documents if d['doc_id'] == doc_id), None) if doc_id else documents[-1]
+    if selected is None:
+        return '<div class="mi-doc-overview">Choose an indexed document to inspect its text.</div>'
+    passages = [c for c in chunks() if c['doc_id'] == selected['doc_id']]
+    if not passages:
+        return '<div class="mi-doc-overview">No readable passages are indexed for this document.</div>'
+
+    source_count = len({c['source'] for c in passages})
+    is_pdf = all(c['source'].startswith('page ') for c in passages)
+    location_label = ('page' if source_count == 1 else 'pages') if is_pdf else (
+        'source location' if source_count == 1 else 'source locations'
+    )
+    common = Counter(
+        word for word in re.findall(r'[a-z][a-z0-9-]{2,}', ' '.join(c['text'] for c in passages).lower())
+        if word not in ENGLISH_STOP_WORDS and word not in {
+            'document', 'report', 'reports', 'page', 'slide', 'slides',
+            'exam', 'line', 'map', 'data', 'answer', 'question', 'section', 'topic',
+            'summary', 'synthetic',
+        }
+    )
+    terms = [word for word, _ in common.most_common(4)]
+    previews = []
+    seen_sources = set()
+    for passage in passages:
+        if passage['source'] in seen_sources:
+            continue
+        seen_sources.add(passage['source'])
+        text = passage['text'].strip()
+        snippet = escape(text[:300].rsplit(' ', 1)[0] + '…' if len(text) > 300 else text)
+        previews.append(f'<li><strong>{escape(passage["source"])}</strong><p>{snippet}</p></li>')
+        if len(previews) == 3:
+            break
+    terms_html = ', '.join(escape(term) for term in terms) if terms else 'No repeated topic words found'
+    questions = ''.join(
+        f'<li>What does this document say about {escape(term)}?</li>'
+        for term in terms[::2][:2]
+    )
+    return (
+        '<div class="mi-doc-overview">'
+        f'<h4>{escape(selected["filename"])}</h4>'
+        f'<p><strong>Indexed:</strong> {len(passages)} text passages from {source_count} {location_label}. '
+        'This is an extractive preview, not an AI-written summary.</p>'
+        f'<p><strong>Frequent terms:</strong> {terms_html}</p>'
+        '<h5>What the source text says</h5><ul class="mi-source-preview">'
+        + ''.join(previews) + '</ul>'
+        + ('<h5>Questions to try</h5><ul class="mi-questions">' + questions + '</ul>' if questions else '')
+        + '</div>'
+    )
+
+
+def analysis_guidance(operation: str, count: int, mode: str):
+    """Explain what the selected analysis will produce before it can run."""
+    total = len(records())
+    if total == 0:
+        note = '**No documents indexed.** Add at least two documents in Documents & AI first.'
+        ready = False
+    elif total == 1:
+        note = '**1 document indexed.** You can read and search it now. Add another document to compare or cluster them.'
+        ready = False
+    elif operation == 'K-Means clustering' and count > total:
+        note = f'**{total} documents indexed.** Choose {total} or fewer groups, or add more documents.'
+        ready = False
+    elif operation == 'K-Means clustering':
+        note = f'**Ready:** {total} documents will be assigned to {count} groups. The output will list each document and its group.'
+        ready = True
+    else:
+        note = f'**Ready:** {total} documents will be compared. The output will show matching documents and cosine scores.'
+        ready = True
+    if ready:
+        note += (' Real MPI will start separate ranks only if your MPI runtime works; there is no simulated fallback.'
+                 if mode == 'Real MPI' else ' Sequential mode runs locally without MPI.')
+    return note, gr.update(interactive=ready)
 
 
 def ask(question: str, use_ollama: bool):
@@ -76,6 +169,10 @@ def ask(question: str, use_ollama: bool):
         res = answer(question, generate=use_ollama)
         refs = [[p['filename'],p['source'],round(p['score'],3),p['text'][:350]] for p in res['evidence']]
         label = ('Real local Ollama generation' if res['generated'] else 'Evidence-only, no LLM invocation')
+        if not refs:
+            help_text = ('Read the extracted document preview above and try one of its topic-specific questions.'
+                         if records() else 'Index a document first, then ask about its contents.')
+            return f'**Mode:** {label}\n\n**No matching passage.** {help_text}', []
         return f"**Mode:** {label}\n\n{res['answer']}",refs
     except Exception as exc:
         return f'**Could not answer:** {exc}',[]
@@ -96,6 +193,8 @@ def run_analysis(operation: str, mode: str, processes: int, count: int, embeddin
         ids,matrix=load_dataset(dataset_path)
         if operation == 'Exact similarity · top-k' and len(ids) < 2:
             raise ValueError('Similarity needs at least two indexed documents. Add another PDF, Word, or CSV report and run again.')
+        if operation == 'K-Means clustering' and len(ids) < 2:
+            raise ValueError('Clustering needs at least two indexed documents. Add another report and run again.')
         if operation == 'K-Means clustering' and count>len(ids):
             raise ValueError(f'Cluster count {count} exceeds {len(ids)} uploaded documents')
         if mode == 'Real MPI':
@@ -145,8 +244,10 @@ def inspect_result(filename):
     rows=([[names.get(r['doc_id'],r['doc_id']),names.get(r['similar_doc_id'],r['similar_doc_id']),str(round(r['score'],5))]
            if 'score' in r else [names.get(r['doc_id'],r['doc_id']),f"Cluster {r['cluster_id']}",'']
            for r in entries[:200]])
+    elapsed = meta.get('runtime_seconds')
+    elapsed_label = f'{elapsed:.3g}' if isinstance(elapsed, (int, float)) else 'not recorded'
     return (f"**{meta.get('mode','Unknown')}** · {meta.get('algorithm','')} · "
-            f"{meta.get('documents','?')} documents · runtime {meta.get('runtime_seconds','?')} seconds",
+            f"{meta.get('documents','?')} documents · runtime {elapsed_label} seconds",
             rows,json.dumps(meta,indent=2))
 
 

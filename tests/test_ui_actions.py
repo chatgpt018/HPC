@@ -4,6 +4,7 @@ from pathlib import Path
 
 from marketintel.ui_actions import (
     upload, ask, run_analysis, inspect_result, result_chart, show_benchmark,
+    document_options, document_overview, analysis_guidance,
 )
 from marketintel.storage import home, write_json
 
@@ -77,6 +78,47 @@ def test_single_document_does_not_create_empty_similarity_result(tmp_path, monke
     assert 'at least two indexed documents' in status
     assert table == [] and metadata == ''
     assert not list((home() / 'results').glob('*.json'))
+    status, table, metadata = run_analysis('K-Means clustering', 'Sequential', 2, 1, 'hashing')
+    assert 'at least two indexed documents' in status
+    assert table == [] and metadata == ''
+    assert not list((home() / 'results').glob('*.json'))
+
+
+def test_document_overview_is_cited_and_escapes_uploaded_text(tmp_path, monkeypatch):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'local-store'))
+    write_json(home() / 'documents.json', [
+        {'doc_id': 'one', 'filename': 'NISQ <notes>.pdf', 'industry': 'Synthetic', 'chunk_count': 2},
+    ])
+    write_json(home() / 'chunks.json', [
+        {'chunk_id': 'one-00000', 'doc_id': 'one', 'source': 'page 1',
+         'text': 'Quantum circuits and NISQ hardware. <script>alert(1)</script>'},
+        {'chunk_id': 'one-00001', 'doc_id': 'one', 'source': 'page 2',
+         'text': 'Quantum circuits need error correction and reliable qubits.'},
+    ])
+    preview = document_overview()
+    assert 'page 1' in preview and 'page 2' in preview
+    assert 'Questions to try' in preview and 'Frequent terms' in preview
+    assert '&lt;notes&gt;' in preview and '&lt;script&gt;' in preview
+    assert '<script>' not in preview
+    assert document_options()['value'] == 'one'
+
+    response, evidence = ask('what is this pdf about', False)
+    assert 'document preview' in response and evidence == []
+
+
+def test_analysis_guidance_prevents_invalid_one_document_job(tmp_path, monkeypatch):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'local-store'))
+    write_json(home() / 'documents.json', [{'doc_id': 'one', 'filename': 'one.pdf'}])
+    note, button = analysis_guidance('K-Means clustering', 3, 'Sequential')
+    assert '1 document indexed' in note and button['interactive'] is False
+
+    write_json(home() / 'documents.json', [
+        {'doc_id': 'one', 'filename': 'one.pdf'}, {'doc_id': 'two', 'filename': 'two.pdf'},
+    ])
+    note, button = analysis_guidance('K-Means clustering', 3, 'Sequential')
+    assert '2 or fewer groups' in note and button['interactive'] is False
+    note, button = analysis_guidance('K-Means clustering', 2, 'Sequential')
+    assert 'Ready' in note and button['interactive'] is True
 
 
 def test_invalid_execution_mode_cannot_be_reported_as_sequential(tmp_path, monkeypatch):

@@ -93,9 +93,9 @@ does not touch user files, create AWS resources, call paid APIs, or simulate MPI
 | Section | What to demonstrate |
 |---|---|
 | **Overview** | Honest feature/environment status and processing pipeline |
-| **Documents & Ask** | Import PDF/DOCX/CSV, see processed sources, ask a question |
-| **HPC Lab** | Compute similarity or K-Means on vectors derived from uploaded files; use genuine MPI only where installed |
-| **Results & methodology** | Inspect real result tables/charts, download JSON and research brief, examine market metrics and measured benchmarks |
+| **Documents & AI** | Import PDF/DOCX/CSV, inspect page- or row-labeled text excerpts, ask a topic-specific question and check cited evidence |
+| **HPC Analytics** | See input requirements before running similarity or K-Means on document vectors; use genuine MPI only where installed |
+| **Results & Reports** | Inspect real result tables/charts, download JSON and research brief, examine market metrics and measured benchmarks |
 
 **Behind the Analysis:** You can explain a saved numerical result using a
 deterministic source-aware report, or optionally invoke a configured local
@@ -111,7 +111,7 @@ python scripts/create_demo.py
 1. Import at least three files in `examples/synthetic_reports` through
    **02 Documents & AI**. These files are **synthetic practice samples**, not
    actual market studies.
-2. Ask a question. Inspect the actual source filename/row in the evidence table.
+2. Select a document under **Read what was extracted**. Use a suggested topic to ask a question, then inspect the source filename and page/row in the evidence table.
 3. Open **03 HPC Analytics** and run **Sequential** similarity or K-Means.
 4. Open **04 Results & Reports**, inspect actual scores, and use
    **Explain selected findings**.
