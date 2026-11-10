@@ -30,5 +30,6 @@ def test_real_pdf(monkeypatch,tmp_path):
 def test_bad_pdf_has_error(monkeypatch,tmp_path):
     monkeypatch.setenv('MARKETINTEL_DATA_DIR',str(tmp_path/'store'))
     path=tmp_path/'corrupt.pdf';path.write_bytes(b'not a PDF')
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError,match='valid, uncorrupted PDF') as error:
         ingest_file(path)
+    assert str(tmp_path) not in str(error.value)

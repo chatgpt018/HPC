@@ -19,7 +19,11 @@ def parse_file(path: Path) -> list[tuple[str, str]]:
     suffix = path.suffix.lower()
     if suffix == '.pdf':
         import pymupdf
-        with pymupdf.open(path) as doc:
+        try:
+            pdf = pymupdf.open(path)
+        except pymupdf.FileDataError as exc:
+            raise ValueError('Cannot read PDF. Check that the file is a valid, uncorrupted PDF.') from exc
+        with pdf as doc:
             if doc.is_encrypted:
                 raise ValueError('Encrypted PDFs are not supported')
             return [(f'page {i+1}', page.get_text('text')) for i, page in enumerate(doc)]

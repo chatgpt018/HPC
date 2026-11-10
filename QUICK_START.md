@@ -46,6 +46,8 @@ For **genuine MPI**, first install a compatible MPI runtime and development head
 
 In the dashboard, import the clearly labelled synthetic practice reports or upload your own PDF, DOCX or CSV. Ask a question to see cited source passages in **evidence-only** mode. For similarity, index **at least two documents**; then run **Sequential** analysis and inspect the saved result. This path needs no model download or network service. A local Ollama model and sentence-transformer model are optional and are not installed by the setup scripts. The [end-semester project report](output/pdf/Final_Year_Project_Report.pdf) summarizes what has been verified and what remains for the AWS stage.
 
+PDFs must be 25 MB or smaller and contain selectable text. Image-only scans need OCR, which this release does not provide; encrypted, empty and corrupt PDFs show an import error. Uploading the same PDF again reports **Already indexed** and does not duplicate its excerpts. Importing a PDF does not automatically run analysis or call an AI service.
+
 The default data folder is `storage/` inside this extracted project, regardless of the terminal's starting folder. To use another location, set `MARKETINTEL_DATA_DIR` in your shell before launching. `.env.example` lists safe settings but is not loaded automatically. It contains no credentials. Do not copy an old laptop's `storage/` state if it contains private documents or absolute local paths.
 
 ## Installing on an internet-disconnected laptop
@@ -61,7 +63,6 @@ py -3.11 -m pip wheel --wheel-dir wheelhouse ".[dev]"
 # Ubuntu/WSL2 (use its target Python version)
 python3 -m pip wheel --wheel-dir wheelhouse '.[dev]'
 ```
-
 Copy the ZIP **and** `wheelhouse/` to the offline laptop; place `wheelhouse/` inside the extracted project. Install using `.\setup_windows.ps1 -Wheelhouse wheelhouse` on Windows or `bash setup_linux.sh --wheelhouse wheelhouse` on Linux. Those modes use `--no-index` and fail clearly if a required wheel is missing. Keep Windows and Linux wheelhouses separate. Run the doctor, tests and smoke test above before the first dashboard launch.
 
 The wheelhouse is not part of the small source ZIP. Building one requires a normal package download on the connected computer; using one does not require AWS or paid APIs. If an optional MPI wheel is needed, prepare it separately on Linux with an installed MPI runtime.
