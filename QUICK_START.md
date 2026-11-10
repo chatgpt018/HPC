@@ -44,7 +44,7 @@ For **genuine MPI**, first install a compatible MPI runtime and development head
 
 ## First offline demonstration
 
-In the dashboard, import the clearly labelled synthetic practice reports or upload your own PDF, DOCX or CSV. Ask a question to see cited source passages in **evidence-only** mode, then run **Sequential** similarity or K-Means and inspect the saved result. This path needs no model download or network service. A local Ollama model and sentence-transformer model are optional and are not installed by the setup scripts.
+In the dashboard, import the clearly labelled synthetic practice reports or upload your own PDF, DOCX or CSV. Ask a question to see cited source passages in **evidence-only** mode. For similarity, index **at least two documents**; then run **Sequential** analysis and inspect the saved result. This path needs no model download or network service. A local Ollama model and sentence-transformer model are optional and are not installed by the setup scripts. The [end-semester project report](output/pdf/Final_Year_Project_Report.pdf) summarizes what has been verified and what remains for the AWS stage.
 
 The default data folder is `storage/` inside this extracted project, regardless of the terminal's starting folder. To use another location, set `MARKETINTEL_DATA_DIR` in your shell before launching. `.env.example` lists safe settings but is not loaded automatically. It contains no credentials. Do not copy an old laptop's `storage/` state if it contains private documents or absolute local paths.
 

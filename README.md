@@ -9,6 +9,10 @@ An optional local Ollama model can generate grounded answers and explanations.
 A real `mpi4py` implementation distributes computational workloads across
 processes when an MPI runtime is available. **No HPC results are simulated.**
 
+The [end-semester project report PDF](output/pdf/Final_Year_Project_Report.pdf)
+summarizes the implemented system, measured tests, and remaining academic
+evidence. It distinguishes the verified local build from the pending AWS stage.
+
 > **Professor's technical requirements:** Genuine HPC workload, real MPI or
 > OpenMP execution, clear HPC necessity, and eventual deployment on AWS.
 > This package completes a tested **local foundation**. Four-rank MPI
@@ -48,7 +52,7 @@ an installed Ollama model, cloud deployment or live database. See
 | Source-aware saved results, charts, deterministic analysis briefs | Implemented; tested |
 | Traceable CSV market metric calculations | Implemented; tested |
 | Real sequential vs MPI benchmark script | 8 WSL2 scaling configurations measured and checked; all small cases slower than sequential |
-| Four-section Gradio dashboard | Windows localhost HTTP 200; four pages and synthetic document workflow browser-checked |
+| Four-section Gradio dashboard | Windows localhost HTTP 200; four pages, two synthetic PDF uploads, retrieval, analysis and downloads browser-checked |
 | Docker packaging for local web app | Provided; Docker image build not independently tested |
 | AWS hosting, Bedrock, ParallelCluster, Slurm, multi-node EC2 | **NOT DEPLOYED**; user-owned final stage |
 
@@ -105,12 +109,12 @@ python scripts/create_demo.py
 ```
 
 1. Import at least three files in `examples/synthetic_reports` through
-   **Documents & Ask**. These files are **synthetic practice samples**, not
+   **02 Documents & AI**. These files are **synthetic practice samples**, not
    actual market studies.
 2. Ask a question. Inspect the actual source filename/row in the evidence table.
-3. Open **HPC Lab** and run **Sequential** similarity or K-Means.
-4. Open **Results & methodology**, refresh saved results, inspect actual
-   scores and use **Explain selected result**.
+3. Open **03 HPC Analytics** and run **Sequential** similarity or K-Means.
+4. Open **04 Results & Reports**, inspect actual scores, and use
+   **Explain selected findings**.
 5. Download the result JSON and Markdown brief; check the input fingerprint,
    feature type and source-document manifest.
 6. For factual numerical trends, upload a CSV with columns

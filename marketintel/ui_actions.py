@@ -94,6 +94,8 @@ def run_analysis(operation: str, mode: str, processes: int, count: int, embeddin
         dataset_path=home()/'datasets'/'uploaded_reports.npz'
         detail=save_dataset(dataset_path, embedding_mode=embedding_mode)
         ids,matrix=load_dataset(dataset_path)
+        if operation == 'Exact similarity · top-k' and len(ids) < 2:
+            raise ValueError('Similarity needs at least two indexed documents. Add another PDF, Word, or CSV report and run again.')
         if operation == 'K-Means clustering' and count>len(ids):
             raise ValueError(f'Cluster count {count} exceeds {len(ids)} uploaded documents')
         if mode == 'Real MPI':

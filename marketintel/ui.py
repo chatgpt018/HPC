@@ -66,7 +66,7 @@ def build() -> gr.Blocks:
                         gr.Markdown('#### 01 / Add your source documents')
                         uploads = gr.File(
                             file_types=['.pdf', '.docx', '.csv'], file_count='multiple', type='filepath',
-                            label='Choose PDF, Word or CSV reports', elem_id='mi-file-upload',
+                            label='Choose PDF, Word or CSV reports', elem_id='mi-file-upload', height=160,
                         )
                         industry = gr.Textbox(
                             value='Unspecified', label='Industry (optional)',
@@ -185,20 +185,24 @@ def build() -> gr.Blocks:
                 refresh_saved.click(list_results, outputs=saved)
                 app.load(list_results, outputs=saved)
                 results_tab.select(list_results, outputs=saved)
-                saved_description = gr.Markdown()
+                saved_description = gr.Markdown('Select a saved analysis above, then inspect it. If the list is empty, index at least two documents and run an analysis first.')
                 with gr.Row(equal_height=False):
                     with gr.Column(scale=6):
                         saved_table = gr.Dataframe(
                             headers=['Source document', 'Match / cluster', 'Score'],
-                            interactive=False, wrap=True,
+                            interactive=False, wrap=True, visible=False,
                         )
                     with gr.Column(scale=6):
-                        saved_plot = gr.Plot(label='Actual computed result')
+                        saved_plot = gr.Plot(label='Actual computed result', visible=False)
                 with gr.Accordion('Behind the Analysis · actual calculation metadata', open=False):
                     saved_metadata = gr.Code(language='json', label='Source and algorithm receipt')
                 def inspect_and_plot(name):
                     description, table, metadata = inspect_result(name)
-                    return description, table, metadata, result_chart(name)
+                    chart = result_chart(name)
+                    return (description, gr.update(value=table, visible=bool(table)), metadata,
+                            gr.update(value=chart, visible=chart is not None))
+                saved.change(inspect_and_plot, inputs=saved,
+                             outputs=[saved_description, saved_table, saved_metadata, saved_plot])
                 gr.Button('Inspect selected result', variant='primary').click(
                     inspect_and_plot, inputs=[saved],
                     outputs=[saved_description, saved_table, saved_metadata, saved_plot],

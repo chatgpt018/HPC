@@ -68,6 +68,17 @@ def test_failed_real_mpi_request_is_not_displayed_as_completed(tmp_path, monkeyp
     assert table == [] and metadata == ''
 
 
+def test_single_document_does_not_create_empty_similarity_result(tmp_path, monkeypatch):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'local-store'))
+    file = _market_csv(tmp_path, 'one.csv', 'Synthetic solar supply chain practice report.')
+    upload([str(file)], 'Synthetic sample')
+
+    status, table, metadata = run_analysis('Exact similarity · top-k', 'Sequential', 2, 3, 'hashing')
+    assert 'at least two indexed documents' in status
+    assert table == [] and metadata == ''
+    assert not list((home() / 'results').glob('*.json'))
+
+
 def test_invalid_execution_mode_cannot_be_reported_as_sequential(tmp_path, monkeypatch):
     monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'local-store'))
     status, table, metadata = run_analysis('Exact similarity · top-k', 'Unknown mode', 2, 1, 'hashing')

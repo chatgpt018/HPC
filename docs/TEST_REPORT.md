@@ -6,15 +6,16 @@
 
 The exact commands, package versions, measured MPI results and remaining limits
 are recorded in [`../VERIFICATION.md`](../VERIFICATION.md). On this Windows
-machine, the Python 3.11 suite passed **47 tests**, `pip check` passed, the
+machine, the Python 3.11 suite passed **48 tests**, `pip check` passed, the
 offline PDF/DOCX/CSV smoke test passed, and the four-page Gradio workflow was
-inspected in a browser. In existing Ubuntu WSL2, real four-rank similarity and
+inspected in a browser, including two synthetic PDF uploads, cited retrieval,
+sequential analysis, results and downloads. In existing Ubuntu WSL2, real four-rank similarity and
 distributed K-Means matched sequential references on synthetic numerical and
 document-derived inputs.
 
-The portability check in `../VERIFICATION.md` additionally covers fresh ZIP
+The portability check in `../VERIFICATION.md` additionally covers fresh final-ZIP
 installs through the Windows and Linux setup scripts, both launch scripts,
-and a Windows `--no-index` wheelhouse install. These environments were on one
+and a Windows `--no-index` wheelhouse install on the previous source revision. These environments were on one
 physical laptop; a second laptop was not available for testing.
 
 ## How correctness is tested
