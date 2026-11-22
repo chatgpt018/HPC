@@ -13,6 +13,9 @@ The [end-semester project report PDF](output/pdf/Final_Year_Project_Report.pdf)
 summarizes the implemented system, measured tests, and remaining academic
 evidence. It distinguishes the verified local build from the pending AWS stage.
 
+For a shareable walkthrough of the workflow, implementation, setup, expected
+outputs, and verification, read the [project explanation and run guide PDF](output/pdf/Project_Explanation_and_Run_Guide.pdf).
+
 > **Professor's technical requirements:** Genuine HPC workload, real MPI or
 > OpenMP execution, clear HPC necessity, and eventual deployment on AWS.
 > This package completes a tested **local foundation**. Four-rank MPI
