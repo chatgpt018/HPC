@@ -45,6 +45,23 @@ def test_cluster_equivalence_checks_inertia():
     assert not equivalent_results(a,b,'clustering')
 
 
+def test_cluster_equivalence_checks_centroids_and_iterations_under_label_permutation():
+    reference = {'metadata': {'inertia': 0.0, 'iterations': 2},
+                 'assignments': [{'doc_id': 'a', 'cluster_id': 0},
+                                 {'doc_id': 'b', 'cluster_id': 1}],
+                 'centroids': [[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]]}
+    candidate = {'metadata': {'inertia': 0.0, 'iterations': 2},
+                 'assignments': [{'doc_id': 'a', 'cluster_id': 1},
+                                 {'doc_id': 'b', 'cluster_id': 0}],
+                 'centroids': [[0.0, 1.0], [1.0, 0.0], [2.0, 2.0]]}
+    assert equivalent_results(reference, candidate, 'clustering')
+    candidate['centroids'][1][0] = 9.0
+    assert not equivalent_results(reference, candidate, 'clustering')
+    candidate['centroids'][1][0] = 1.0
+    candidate['metadata']['iterations'] = 3
+    assert not equivalent_results(reference, candidate, 'clustering')
+
+
 def test_performance_calculations_without_fake_timings():
     assert work_units('similarity',100)==(9900,'directed document comparisons')
     assert work_units('clustering',100,iterations=5,clusters=3)[0]==1500
@@ -154,3 +171,5 @@ def test_fake_mpi_rank_claim_with_wrong_results_is_rejected(monkeypatch,tmp_path
     status=read_json(entries[0],{})
     assert status['status']=='FAILED'
     assert status.get('correctness_verified') is not True
+    assert list((tmp_path/'state'/'results').glob('*.json')) == []
+    assert len(list((tmp_path/'state'/'jobs'/'candidate_results').glob('*.json'))) == 1

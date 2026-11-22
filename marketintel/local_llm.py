@@ -3,10 +3,19 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
 OLLAMA_ENDPOINT = 'http://127.0.0.1:11434/api/generate'
+
+
+def cited_source_numbers(text: str, source_count: int) -> list[int]:
+    """Reject missing or invented numbered citations in local model output."""
+    cited = {int(number) for number in re.findall(r'\[(\d+)\]', text)}
+    if not cited or any(number < 1 or number > source_count for number in cited):
+        raise RuntimeError('Local model answer needs valid [1]-style citations to retrieved sources; inspect the evidence table.')
+    return sorted(cited)
 
 
 def invoke(prompt: str) -> tuple[str, str]:

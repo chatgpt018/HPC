@@ -24,7 +24,10 @@ def vector_fingerprint(ids: list[str], vectors: np.ndarray) -> str:
 def attach_provenance(result: dict, ids: list[str], vectors: np.ndarray,
                       feature_type: str, source: str = 'uploaded-documents') -> dict:
     """Attach the exact input snapshot to a real computed result."""
-    manifest = {d['doc_id']: {'filename': d['filename'], 'industry': d.get('industry', 'Unspecified')}
+    fields = ('filename', 'industry', 'publisher', 'source_url', 'publication_date',
+              'reporting_period', 'geographic_scope', 'source_type', 'usage_notes',
+              'source_kind', 'content_sha256')
+    manifest = {d['doc_id']: {key: d[key] for key in fields if key in d}
                 for d in records()}
     result['metadata'].update({
         'input_type': source,

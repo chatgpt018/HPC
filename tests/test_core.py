@@ -25,6 +25,23 @@ def test_topk_tie_boundary():
     assert [r for r in found if r['doc_id']=='b'][0]['similar_doc_id']=='a'
 
 
+def test_topk_partition_matches_full_sort_with_boundary_ties():
+    rng = np.random.default_rng(17)
+    ids = [f'd{i:03d}' for i in range(37)]
+    vectors = rng.integers(-2, 3, size=(37, 8)).astype(np.float32)
+    vectors[5:10] = vectors[0]
+    normalized = normalize(vectors)
+    found = topk_rows(ids, normalized, 0, len(ids), k=4, block_size=7)
+    for row, doc_id in enumerate(ids):
+        left = (row // 7) * 7
+        scores = (normalized[left:min(left + 7, len(ids))] @ normalized.T)[row - left]
+        scores[row] = -np.inf
+        expected = sorted((i for i in range(len(ids)) if i != row),
+                          key=lambda i: (-scores[i], ids[i]))[:4]
+        actual = [item for item in found if item['doc_id'] == doc_id]
+        assert [item['similar_doc_id'] for item in actual] == [ids[i] for i in expected]
+
+
 def test_topk_zero_vectors():
     ids=['a','b','c']
     mat=np.asarray([[0,0],[1,0],[0,1]],dtype=float)
@@ -50,7 +67,8 @@ def test_chunk_source():
 
 def test_upload_to_hpc_dataset_and_retrieval(monkeypatch,tmp_path):
     monkeypatch.setenv('MARKETINTEL_DATA_DIR',str(tmp_path/'data'))
-    for name,text in [('solar.csv','solar,renewable,photovoltaic'),('battery.csv','battery,lithium,electric vehicle')]:
+    for name,text in [('solar.csv','solar,"renewable,photovoltaic"'),
+                      ('battery.csv','battery,"lithium,electric vehicle"')]:
         path=tmp_path/name
         path.write_text('topic,keywords\n'+text+'\n',encoding='utf-8')
         out=ingest_file(path,industry='Test')

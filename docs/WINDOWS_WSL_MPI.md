@@ -5,12 +5,13 @@
 You can keep Windows as your main operating system. WSL2 runs Linux in Windows;
 Ubuntu is a Linux distribution inside WSL2. **Neither one is AWS.**
 
-**Verified local run (2026-11-10):** This machine already had Ubuntu, Open MPI
-4.1.6 and `mpi4py`. Four ranks executed both algorithms and matched sequential
-results, including a three-document test with one empty rank partition. See
-`../VERIFICATION.md` for the measured study. Native Windows MPI detected an
-MS-MPI launcher but Windows Application Control blocked the `mpi4py.MPI` DLL;
-do not weaken that policy to force a native run.
+**Verified local runs:** Four WSL2 Open MPI ranks matched Sequential on
+2026-11-10. On 2026-11-22, four native Windows Microsoft MPI ranks also matched
+Sequential and a 12-configuration scaling study passed its correctness checks.
+See `../VERIFICATION.md` for environments, measurements and limitations. An
+earlier Windows `mpi4py.MPI` import was blocked by Windows Application Control;
+it succeeded during the later native Windows verification without changing
+security settings.
 
 ## Stage 1 — inspect only (PowerShell)
 

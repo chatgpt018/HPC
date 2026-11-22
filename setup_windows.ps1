@@ -1,16 +1,40 @@
-param([string]$Wheelhouse = '')
+param([string]$Wheelhouse = '', [string]$PythonExecutable = '')
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSCommandPath
 Push-Location -LiteralPath $projectRoot
 try {
-    if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
-        throw 'Python launcher not found. Install Python 3.11 for Windows, then retry.'
+    $pythonExe = ''
+    $pythonArgs = @()
+    if ($PythonExecutable) {
+        $pythonExe = $PythonExecutable
+    } else {
+        if (Get-Command py -ErrorAction SilentlyContinue) {
+            & py -3.11 -c 'import sys; assert sys.version_info[:2] == (3, 11)' 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                $pythonExe = 'py'
+                $pythonArgs = @('-3.11')
+            }
+        }
+        if (-not $pythonExe) {
+            foreach ($candidate in @('python3.11', 'python')) {
+                $command = Get-Command $candidate -ErrorAction SilentlyContinue
+                if (-not $command) { continue }
+                & $command.Source -c 'import sys; assert sys.version_info[:2] == (3, 11)' 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    $pythonExe = $command.Source
+                    break
+                }
+            }
+        }
     }
-    & py -3.11 -c 'import sys; print(sys.version); assert sys.version_info[:2] == (3, 11)'
-    if ($LASTEXITCODE -ne 0) { throw 'Python 3.11 is required. Check with: py -0p' }
+    if (-not $pythonExe) {
+        throw 'Python 3.11 was not found. Install it or pass -PythonExecutable <path-to-python.exe>.'
+    }
+    & $pythonExe @pythonArgs -c 'import sys; print(sys.version); assert sys.version_info[:2] == (3, 11)'
+    if ($LASTEXITCODE -ne 0) { throw 'The selected Python executable must be Python 3.11.' }
 
-    & py -3.11 -m venv .venv311
+    & $pythonExe @pythonArgs -m venv .venv311
     if ($LASTEXITCODE -ne 0) { throw 'Could not create .venv311.' }
     $python = Join-Path $projectRoot '.venv311\Scripts\python.exe'
 

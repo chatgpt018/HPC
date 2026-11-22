@@ -22,7 +22,7 @@ def test_combined_report_uses_real_computation_and_source_excerpts(monkeypatch,t
     class Response:
         def __enter__(self): return self
         def __exit__(self,*exc): return False
-        def read(self): return json.dumps({'response':'The similarity calculation grouped the reports by words.'}).encode()
+        def read(self): return json.dumps({'response':'The source discusses battery topics [1].'}).encode()
     def fake_call(req, timeout):
         requests.append(json.loads(req.data))
         return Response()
@@ -30,6 +30,7 @@ def test_combined_report_uses_real_computation_and_source_excerpts(monkeypatch,t
     monkeypatch.setattr('marketintel.local_llm.urllib.request.urlopen',fake_call)
     out=explain(result,use_ollama=True)
     assert out['generated'] and out['sources']
+    assert out['references']
     assert 'verified computational summary' in requests[0]['prompt'].lower()
     assert 'ev.csv' in requests[0]['prompt']
     assert result['metadata']['input_sha256'] in requests[0]['prompt']

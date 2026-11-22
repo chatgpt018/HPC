@@ -53,8 +53,9 @@ def build() -> gr.Blocks:
                     app.load(workspace_quality, outputs=[quality_note, quality_chart])
                 with gr.Accordion('Environment and implementation status', open=False):
                     environment = gr.Markdown()
-                    gr.Markdown('**Not yet verified:** live multi-rank MPI execution, real local Ollama inference, and AWS deployment. '
-                                'A saved sample or a working sequential algorithm does not establish these capabilities.')
+                    gr.Markdown('**Verification scope:** four-rank MPI was verified on one Windows host and, '
+                                'in an earlier release, one WSL2 host. Check the runtime on this machine before a new MPI run. '
+                                'Live local Ollama inference and AWS deployment remain unverified.')
                 with gr.Row():
                     refresh = gr.Button('↻ Refresh workspace counts', variant='secondary')
                 refresh.click(overview, outputs=[summary, environment])

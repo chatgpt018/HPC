@@ -10,10 +10,50 @@ Do not label fictional example reports as real industry findings.
 
 Use the links to **obtain and review data yourself**. No live external data is bundled or downloaded by the application. Make sure you have permission to store and demonstrate each report.
 
+## Import a sourced case study
+
+1. Obtain a small, permitted set of reports yourself and record the licence or
+   usage terms. Put PDF, DOCX, or CSV files in `data/raw/reports/`; this folder
+   is ignored by Git and absent from the release ZIP.
+2. Copy `data/metadata/manifest.example.csv` to `data/metadata/manifest.csv`.
+   Add one row per file. Use a filename only, without a directory. Complete
+   `publisher`, `publication_date` (`YYYY-MM-DD`), `usage_notes`, and
+   `source_kind=real`. Record the source URL when the file came from the web;
+   the reporting period and geographic scope prevent misleading comparisons.
+3. Run `python -m marketintel.cli ingest-manifest data/metadata/manifest.csv`.
+   The command validates every manifest row before indexing. The project stores
+   a full content SHA-256 and source metadata with each document, then includes
+   those fields in analysis provenance. Reimporting identical bytes adds no
+   duplicate passages. A conflicting attribution is rejected.
+4. Open Documents & AI to inspect extracted source locations. Check at least
+   five passages against originals. Ask a specific source question, then use
+   Sequential similarity or clustering on at least two distinct reports.
+5. Record the document IDs and dataset fingerprint from Results & Reports.
+   Run actual MPI separately where available and compare with Sequential.
+
+For retrieval evaluation, copy `data/metadata/rag_evaluation.example.csv` to a
+private CSV. Add manually checked questions and the expected indexed document
+ID plus page/paragraph/row for each answerable question. Repeat a question
+for multiple required sources. Leave both expected fields blank for an
+insufficient-evidence question. Include factual, multi-document, comparison,
+misleading-assumption, and insufficient-evidence cases. Then run:
+
+```text
+python -m scripts.evaluate_retrieval --questions data/metadata/rag_evaluation.csv --top-k 4
+```
+
+The command reports actual Hit@k, Recall@k, and no-evidence accuracy for the
+current index. It refuses labels that do not point to indexed source locations.
+It does not score LLM truthfulness, and no real-data scores are prefilled.
+
+No real documents are bundled. The practice collection and synthetic scaling
+vectors remain teaching and performance inputs, never real market evidence.
+
 ## Suggested minimum evaluated dataset
 
 - 20–50 genuine reports initially, grouped by company or industry and including publication year.
-- A simple manifest with `file_name, publisher, title, year, source_url, category, license_or_terms`.
+- The bundled manifest template records publisher, date, source URL, reporting
+  period, geography, usage terms, and an explicit real/synthetic classification.
 - Optional CSV time series with exact columns: `market,year,value,unit,region,currency`. Do not combine incompatible currencies, units, date ranges or geographies.
 - Run document ingestion and verify 5 random passages against original PDFs before using them in the demonstration.
 - The MPI scaling study uses **separately labeled synthetic vectors** for reproducible large N experiments. Do not clone/duplicate reports to exaggerate unique document counts.

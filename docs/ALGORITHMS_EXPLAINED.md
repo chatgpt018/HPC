@@ -19,9 +19,15 @@ For two feature vectors A and B, cosine similarity is
 We normalize nonzero vectors to unit length and compare document rows against
 all reference rows, excluding each document's self-match. Score ties are
 resolved deterministically using document IDs. For `N` documents of dimension
-`d`, exhaustive comparison performs approximately `O(N²d)` arithmetic and
-full stable row sorting adds `O(N² log N)` time. Using blocks avoids allocating
-an entire `N × N` similarity matrix.
+`d`, exhaustive comparison performs approximately `O(N²d)` arithmetic. A
+partition step finds each row's exact top-k cutoff; only selected scores and
+cutoff ties are sorted. The block score buffer uses `O(block_size × N)` memory
+instead of allocating an entire `N × N` similarity matrix. The reference
+matrix is still `O(Nd)` per MPI rank in similarity mode.
+
+**Worked example:** `A = (1, 0)` and `B = (0.6, 0.8)` both have unit norm, so
+their cosine score is `1 × 0.6 + 0 × 0.8 = 0.6`. A vector `(0, 1)` has score
+zero against `A`. The program excludes the document's own row from its top-k.
 
 **MPI version:** rank 0 loads and normalizes the input matrix once, broadcasts
 it to other ranks, and partitions query rows across actual ranks. Each rank
@@ -43,11 +49,18 @@ statistics so every rank computes the same global centroids. Final assignments
 are gathered at rank 0. The implementation retains old centroids for empty
 clusters. Cluster numbers are arbitrary labels.
 
+**Worked partition:** seven vectors on three ranks give row spans `[0, 3)`,
+`[3, 5)`, and `[5, 7)`. Each rank sums its assigned points by cluster;
+`Allreduce` produces the same global sums and counts on every rank. Dividing
+each sum by its count updates the centroid. If a count is zero, the old
+centroid is retained. With more ranks than vectors, some spans are empty and
+still participate in the collectives.
+
 ## 4. Correctness first
 
 Compare sequential and MPI top-k pairs/scores with floating-point tolerance.
 For clustering, check co-assignment groups (cluster IDs may be permuted),
-inertia and equivalent initialization. Carefully check uneven row partitions,
+centroids under the label permutation, inertia and iteration count. Carefully check uneven row partitions,
 zero vectors, empty clusters and more ranks than rows.
 
 ## 5. Speedup is an experiment, not a promise
@@ -68,3 +81,6 @@ Ollama model is configured, it generates an answer using those passages.
 The displayed source table lets a user independently check the original text.
 With no Ollama model, only evidence retrieval is performed — do not call it a
 completed LLM answer.
+The optional neural index persists chunk vectors and re-encodes only changed
+passages. Numbered model citations must refer to retrieved sources, though
+this mechanical check cannot prove that each generated claim is true.

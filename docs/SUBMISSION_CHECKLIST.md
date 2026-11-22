@@ -5,7 +5,7 @@
 ## Local project evidence
 
 - [x] A clean Windows Python 3.11 environment can install the project.
-- [x] `python -m pytest -q` passes (47 tests at the portability checkpoint; see `../VERIFICATION.md`).
+- [x] `python -m pytest -q -p no:cacheprovider` passes (60 tests in the latest Windows working tree; see `../VERIFICATION.md`).
 - [x] `python scripts/verify_local.py` prints `PASS` (offline fixtures).
 - [ ] Gradio launches and supports actual uploaded PDF/DOCX/CSV files.
 - [x] Evidence table shows file names and page/paragraph/CSV row locations in tests and the local workflow.
@@ -21,8 +21,9 @@
 - [x] Equivalent sequential/MPI outputs pass correctness checks.
 - [x] A preliminary range of small workload sizes and rank counts was measured without fake data.
 - [x] Median wall times, speedup and efficiency are reported with raw logs.
+- [x] Current Windows study has 12 verified configurations, three repetitions each, measured memory, and offline charts.
 - [ ] Repeat larger experiments at least three times on the Ubuntu filesystem for defensible scaling conclusions.
-- [ ] Results/plots distinguish synthetic scaling runs from real-report analysis.
+- [x] Results/plots distinguish synthetic scaling runs from real-report analysis.
 
 ## AWS — user-owned final stage (NOT completed by this local package)
 

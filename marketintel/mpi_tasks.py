@@ -13,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .performance import work_units, rate
+from .performance import work_units, rate, peak_rss_kib as _peak_rss_kib
 from .analysis import assign, initial_centroids, local_sums, normalize, topk_rows, updated_centroids
 from .storage import write_json
 from .vectors import load_dataset
@@ -148,17 +148,6 @@ def run(operation: str, input_path: Path, output_path: Path, processes_expected:
         write_json(output_path, output)
         return output
     return None
-
-
-def _peak_rss_kib() -> int:
-    """Per-rank peak RSS as KiB where supported; unavailable returns zero."""
-    try:
-        import resource
-        import sys
-        rss=int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-        return rss // 1024 if sys.platform == 'darwin' else rss
-    except ImportError:
-        return 0
 
 
 def main() -> None:

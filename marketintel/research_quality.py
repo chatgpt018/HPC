@@ -22,9 +22,12 @@ def quality_report() -> dict:
     mismatched_chunks = sum(1 for p in passages if p.get('doc_id') not in ids)
     synthetic = sum(
         1 for d in documents
-        if any(marker in ((d.get('filename') or '') + ' ' + (d.get('industry') or '')).lower()
-               for marker in ('synthetic', 'demo'))
+        if d.get('source_kind') == 'synthetic' or (
+            d.get('source_kind') != 'real' and
+            any(marker in ((d.get('filename') or '') + ' ' + (d.get('industry') or '')).lower()
+                for marker in ('synthetic', 'demo')))
     )
+    attributed_real = sum(1 for d in documents if d.get('source_kind') == 'real')
     observations = []
     if not documents:
         observations.append('No reports indexed. Upload permitted PDF, DOCX or CSV sources to begin.')
@@ -32,6 +35,8 @@ def quality_report() -> dict:
         observations.append(f'{by_industry["Unspecified"]} reports lack an industry label.')
     if synthetic:
         observations.append(f'{synthetic} documents are marked or named as synthetic/demo examples; exclude them from real-world findings.')
+    if documents and not attributed_real:
+        observations.append('No sources have an explicit verified real-source manifest; do not present this collection as a real market case study.')
     if missing_sources or mismatched_chunks:
         observations.append(f'{missing_sources + mismatched_chunks} passages have incomplete or mismatched source references.')
     if documents and len(documents) < 10:
@@ -44,6 +49,7 @@ def quality_report() -> dict:
         'industries': dict(sorted(by_industry.items())),
         'formats': dict(sorted(by_type.items())),
         'synthetic_document_count': synthetic,
+        'attributed_real_document_count': attributed_real,
         'missing_source_passages': missing_sources,
         'orphan_source_passages': mismatched_chunks,
         'expected_directed_pairs': len(documents) * max(len(documents) - 1, 0),

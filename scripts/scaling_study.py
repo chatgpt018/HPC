@@ -13,7 +13,11 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
+import platform
 import shutil
+import statistics
+import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -82,11 +86,24 @@ def run_study(sizes: list[int], processes: list[int], operations: list[str],
                     'efficiency_percent':entry['median_parallel_efficiency_percent'],
                     'sequential_work_units_per_second':entry['median_sequential_work_units_per_second'],
                     'mpi_work_units_per_second':entry['median_mpi_work_units_per_second'],
+                    'median_sequential_peak_rss_kib':statistics.median(
+                        run['sequential_peak_rss_kib'] for run in entry['runs']),
+                    'median_mpi_rank_peak_rss_kib':statistics.median(
+                        run['mpi_rank_peak_rss_kib'] for run in entry['runs']),
+                    'median_mpi_rank_cpu_seconds':statistics.median(
+                        run['mpi_rank_cpu_seconds'] for run in entry['runs']),
+                    'median_mpi_section_seconds':statistics.median(
+                        run['mpi_reported_compute_seconds'] for run in entry['runs']),
+                    'median_mpi_outside_section_seconds':statistics.median(
+                        run['mpi_end_to_end_wall_seconds'] - run['mpi_reported_compute_seconds']
+                        for run in entry['runs']),
                     'verified':all(r['correct'] for r in entry['runs']),
                 })
     result={'study_id':study_id,'study_kind':'REAL_MPI_WITH_SYNTHETIC_INPUT',
             'methodology':'Equivalent sequential/MPI workloads, end-to-end times, rank verification',
             'created_utc':datetime.now(timezone.utc).isoformat(),
+            'environment':{'platform':platform.platform(), 'python':sys.version.split()[0],
+                           'logical_cpu_count':os.cpu_count(), 'blas_threads':1},
             'rows':rows}
     write_json(folder/'scaling_study.json',result)
     with (folder/'scaling_study.csv').open('w',newline='',encoding='utf-8') as handle:

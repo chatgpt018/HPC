@@ -15,6 +15,8 @@ evidence. It distinguishes the verified local build from the pending AWS stage.
 
 For a shareable walkthrough of the workflow, implementation, setup, expected
 outputs, and verification, read the [project explanation and run guide PDF](output/pdf/Project_Explanation_and_Run_Guide.pdf).
+The [latest engineering review](docs/FINAL_ENGINEERING_REVIEW.md) records the
+current audit, measured Windows MPI study, requirement status, and remaining work.
 
 > **Professor's technical requirements:** Genuine HPC workload, real MPI or
 > OpenMP execution, clear HPC necessity, and eventual deployment on AWS.
@@ -146,18 +148,19 @@ an installed Ollama model, cloud deployment or live database. See
 
 | Component | Status |
 |---|---|
-| PDF, DOCX and CSV ingestion with file/source metadata | Implemented; integration tested |
+| PDF, DOCX and CSV ingestion with file/source metadata | Implemented; content validation and manifest-based source attribution tested |
 | Local TF-IDF document evidence retrieval | Implemented; **lexical**, not neural semantic retrieval |
-| Optional transformer embeddings from an installed local model | Integration implemented; model installation/runtime not verified |
+| Optional transformer embeddings from an installed local model | Versioned incremental local index contract tested; live model not installed |
 | Optional local Ollama answers and HPC explanations | Integration and contract tested; live model execution not verified |
 | Document-derived numerical vectors with stable source IDs | Implemented; integration tested |
 | Sequential cosine top-k and Lloyd K-Means | Implemented; unit and smoke tested |
-| Genuine MPI similarity and distributed K-Means source code | Four-rank WSL2 execution verified on synthetic inputs, including an empty partition |
-| Real MPI launcher, fail-closed job records and runtime status | Four-rank WSL2 jobs verified against sequential references with source provenance |
+| Genuine MPI similarity and distributed K-Means source code | Four-rank Windows and earlier WSL2 execution verified on synthetic inputs, including an empty partition |
+| Real MPI launcher, fail-closed job records and runtime status | Native Windows jobs verified against Sequential; failed candidates stay out of completed Results |
 | Source-aware saved results, charts, deterministic analysis briefs | Implemented; tested |
 | Traceable CSV market metric calculations | Implemented; tested |
-| Real sequential vs MPI benchmark script | 8 WSL2 scaling configurations measured and checked; all small cases slower than sequential |
-| Four-section Gradio dashboard | Windows localhost HTTP 200; four pages, two synthetic PDF uploads, retrieval, analysis and downloads browser-checked |
+| Real sequential vs MPI benchmark script | 12 Windows configurations, three repetitions each, all correct; measured speedups below 1 and [offline charts](output/benchmarks/native_windows_20261122/scaling_charts.html) |
+| Four-section Gradio dashboard | Current revision served localhost HTTP 200; earlier revision browser-checked; fresh visual review stopped before navigation |
+| Real-source case study | Validated manifest import and evaluation workflow ready; real licensed reports not supplied |
 | Docker packaging for local web app | Provided; Docker image build not independently tested |
 | AWS hosting, Bedrock, ParallelCluster, Slurm, multi-node EC2 | **NOT DEPLOYED**; user-owned final stage |
 
@@ -294,6 +297,12 @@ median speedup and efficiency. **Positive speedup is not guaranteed.** Without
   `MARKETINTEL_LOCAL_EMBED_MODEL` to that folder and
   `MARKETINTEL_RETRIEVAL_MODE=semantic`. The HPC feature vector selector can
   use `semantic` as well.
+- The semantic retrieval index is saved locally with model identity, chunk
+  hashes, version, and dataset fingerprint. Unchanged passages are not encoded
+  again for every question. The default TF-IDF path remains model-free.
+- Generated answers must cite numbered retrieved sources. This prevents an
+  unknown citation number from being displayed as valid; checking the factual
+  support of each claim still requires review of the original document.
 - Document data may be supplied to the locally running Ollama process when
   generation is explicitly requested. Do not use confidential files without
   verifying your local setup and data-handling requirements.
@@ -344,6 +353,8 @@ project report. A Dockerfile **does not equal AWS deployment**.
 - `docs/ALGORITHMS_EXPLAINED.md` — what MPI computes and why it matters.
 - `docs/DEMONSTRATION_AND_VIVA.md` — live demo sequence and viva questions.
 - `docs/DATASET_GUIDE.md` — data provenance and realistic experiments.
+- `docs/REAL_DATA_CASE_STUDY.md` — manifest import and manual-source evaluation.
+- `docs/FINAL_ENGINEERING_REVIEW.md` — current audit, experiment evidence, and eleven professor requirements.
 - `docs/TEST_REPORT.md` — independently checked parts and honest limitations.
 - `docs/SUBMISSION_CHECKLIST.md` — exact final acceptance gates.
 - `docs/ORIGINAL_PROJECT_CLEANUP.md` — original file cleanup decisions.

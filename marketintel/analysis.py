@@ -21,15 +21,21 @@ def topk_rows(ids: list[str], normalized: np.ndarray, start: int, stop: int,
         raise ValueError('top_k and block_size must be positive')
     n = len(ids)
     result = []
-    # Full stable sorting per row is intentional for deterministic tie-breaking;
-    # it is not the fastest possible top-k algorithm for very large N.
     names = np.asarray(ids)
+    count = min(k, n - 1)
+    if count == 0:
+        return result
     for left in range(start, stop, block_size):
         right = min(left + block_size, stop)
         scores = normalized[left:right] @ normalized.T
         for offset, row in enumerate(range(left, right)):
             scores[offset, row] = -np.inf
-            order = np.lexsort((names, -scores[offset]))[:min(k, n-1)]
+            # Partition finds the exact score cutoff in linear expected time.
+            # Include every cutoff tie, then sort only candidates by score and
+            # document ID so the result matches a full stable row sort.
+            cutoff = np.partition(scores[offset], -count)[-count]
+            candidates = np.flatnonzero(scores[offset] >= cutoff)
+            order = candidates[np.lexsort((names[candidates], -scores[offset, candidates]))][:count]
             for rank, j in enumerate(order, start=1):
                 if np.isfinite(scores[offset, j]):
                     result.append({'doc_id': ids[row], 'similar_doc_id': ids[j],

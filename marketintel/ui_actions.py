@@ -123,6 +123,13 @@ def document_overview(doc_id: str | None = None) -> str:
         if len(previews) == 3:
             break
     terms_html = ', '.join(escape(term) for term in terms) if terms else 'No repeated topic words found'
+    attribution = ' · '.join(
+        f'<strong>{escape(label)}:</strong> {escape(str(selected[key]))}'
+        for key, label in (('source_kind', 'Source status'), ('publisher', 'Publisher'),
+                           ('publication_date', 'Published'), ('geographic_scope', 'Scope'),
+                           ('source_url', 'Source URL'))
+        if selected.get(key)
+    )
     questions = ''.join(
         f'<li>What does this document say about {escape(term)}?</li>'
         for term in terms[::2][:2]
@@ -132,7 +139,8 @@ def document_overview(doc_id: str | None = None) -> str:
         f'<h4>{escape(selected["filename"])}</h4>'
         f'<p><strong>Indexed:</strong> {len(passages)} text passages from {source_count} {location_label}. '
         'This is an extractive preview, not an AI-written summary.</p>'
-        f'<p><strong>Frequent terms:</strong> {terms_html}</p>'
+        + (f'<p>{attribution}</p>' if attribution else '')
+        + f'<p><strong>Frequent terms:</strong> {terms_html}</p>'
         '<h5>What the source text says</h5><ul class="mi-source-preview">'
         + ''.join(previews) + '</ul>'
         + ('<h5>Questions to try</h5><ul class="mi-questions">' + questions + '</ul>' if questions else '')
@@ -346,7 +354,8 @@ def explain_saved_result(filename, use_ollama=False):
     try:
         output=explain(json.loads(file.read_text(encoding='utf-8')), use_ollama=use_ollama)
         if output['generated']:
-            return f"**Local Ollama-generated explanation (model: {output['model']})**\n\n{output['text']}\n\nSource references: see input document manifest."
+            return (f"**Local Ollama-generated explanation (model: {output['model']})**\n\n"
+                    f"{output['text']}\n\n**Retrieved sources**\n{output['references']}")
         return '**Deterministic computational brief (no LLM invoked)**\n\n'+output['text']
     except Exception as exc:
         return f'**Explanation unavailable:** {exc}'
@@ -412,7 +421,8 @@ def import_practice_collection():
     for source in sorted(folder.glob('synthetic_*.csv')):
         try:
             label=source.stem.split('_',2)[-1].replace('_',' ').title()
-            out=ingest_file(source, industry='SYNTHETIC / '+label)
+            out=ingest_file(source, industry='SYNTHETIC / '+label,
+                            source_metadata={'source_kind': 'synthetic'})
             results.append(out['status'])
         except Exception as exc:
             results.append(f'ERROR {source.name}: {exc}')

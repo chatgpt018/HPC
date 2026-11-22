@@ -27,23 +27,12 @@ from marketintel.vectors import load_dataset
 
 
 from marketintel.correctness import equivalent_results
-from marketintel.performance import work_units, rate, benchmark_summary
+from marketintel.performance import work_units, rate, benchmark_summary, peak_rss_kib as _peak_rss_kib
 
 
 def validate(baseline: dict, parallel: dict, operation: str) -> bool:
     """Memory-safe, full-output validation against sequential reference."""
     return equivalent_results(baseline, parallel, operation)
-
-
-def _peak_rss_kib() -> int:
-    """Return an advisory process RSS high-water mark (KiB); 0 if unsupported."""
-    try:
-        import resource
-        import sys
-        value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-        return value // 1024 if sys.platform == 'darwin' else value
-    except ImportError:
-        return 0
 
 
 def benchmark(input_path: Path, operation: str, world: int, repetitions: int, count: int,

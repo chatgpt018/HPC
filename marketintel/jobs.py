@@ -40,7 +40,10 @@ def run_local_mpi(operation: str, processes: int, top_k: int = 5, k: int = 3,
     if len(ids) < 2:
         raise ValueError('Upload at least two documents for MPI analysis')
     run_id = uuid.uuid4().hex[:12]
-    output = home() / 'results' / f'{run_id}.json'
+    # MPI writes an untrusted candidate under jobs. Publish to Results only
+    # after rank evidence and independent Sequential comparison both pass.
+    output = home() / 'jobs' / 'candidate_results' / f'{run_id}.json'
+    published = home() / 'results' / f'{run_id}.json'
     entry = {'run_id':run_id,'status':'RUNNING','operation':operation,'mode':'mpi-real',
              'processes_requested':processes,'started_utc':datetime.now(timezone.utc).isoformat()}
     job_path = home() / 'jobs' / f'{run_id}.json'
@@ -84,9 +87,9 @@ def run_local_mpi(operation: str, processes: int, top_k: int = 5, k: int = 3,
                     attach_provenance(result, ids, vectors,
                                   'sentence-transformer-local' if embedding_mode == 'semantic'
                                       else 'hashed-lexical-features')
-                    write_json(output, result)
+                    write_json(published, result)
                     entry['actual_ranks'] = ranks
-                    entry['result_path'] = str(output)
+                    entry['result_path'] = str(published)
     except subprocess.TimeoutExpired:
         entry['status']='FAILED'
         entry['stderr']='MPI execution timed out.'

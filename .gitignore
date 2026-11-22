@@ -10,5 +10,9 @@ __pycache__/
 .env
 storage/*
 !storage/.gitkeep
+data/raw/
+data/processed/
+data/metadata/manifest.csv
+data/metadata/rag_evaluation.csv
 *.log
 .DS_Store

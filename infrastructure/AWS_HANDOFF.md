@@ -24,3 +24,45 @@ This repository performs **no AWS calls**. The student will design and authorize
 6. Small end-to-end test: one document, one verified RAG response, one Slurm MPI job, one S3 result.
 
 No subnets, credentials, cluster names or successful deployments are implied by this document.
+
+## Student-owned execution order (not run by this release)
+
+1. Choose an AWS region and record a budget ceiling, EC2 and service quotas,
+   data residency requirements, and the actual prices used for estimates.
+2. Design a private VPC/subnet layout. Give the web service, S3 objects,
+   Slurm head node, and compute nodes separate least-privilege roles. Keep
+   job submission off the public web callback and avoid stored access keys.
+3. Build and smoke-test the app container locally. Add authentication,
+   multi-user storage isolation, durable job state, and a queue before hosting.
+   The current JSON store and synchronous local callback are not production
+   infrastructure.
+4. Define versioned S3 prefixes for permitted raw reports, source metadata,
+   vector NPZ input, candidate results, verified results, and logs. Retain
+   content SHA-256 and the vector fingerprint in each submitted job record.
+5. If Bedrock is selected, verify regional model availability and invoke a
+   real model using retrieved, licensed source excerpts. Record model ID,
+   cost, answer, citation review, and failure handling. Keep the default
+   evidence-only path operational.
+6. Provision ParallelCluster only after budget approval. Use Slurm to submit
+   the existing MPI operation with the same Python and MPI ABI on compute
+   nodes. Start with one node and two ranks, then one node/four ranks, then
+   a controlled two-node case on the **same input fingerprint**.
+7. Capture the actual Slurm job ID, assigned hostnames, rank IDs, row ranges,
+   stdout/stderr, wall time, peak memory, output checksum, and a separately
+   computed Sequential correctness result. A queue acceptance is not a
+   completed or correct job.
+8. Publish a result to the app only after correctness succeeds. Store queued,
+   running, completed, failed, timed-out, and cancelled states durably;
+   restrict logs and documents to the requesting user.
+9. Calculate cost from actual region, instance rate, node count, billed
+   duration, S3 storage/requests, relevant transfers, app hosting, and model
+   inference. Distinguish measured bill lines from estimates. Compare
+   Sequential and MPI cost per validated work unit, not only elapsed time.
+10. Stop/delete idle resources after evidence capture and preserve anonymised
+    experiment metadata for the academic report. Update the professor
+    checklist only with the observed cloud values.
+
+`infrastructure/slurm/` contains review templates for similarity and
+clustering. They require real cluster paths, environment modules, queue
+names, storage, and permissions chosen by the student; none are prefilled as
+if a deployment exists.

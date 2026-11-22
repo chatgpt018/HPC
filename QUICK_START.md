@@ -26,6 +26,11 @@ py -3.11 -m venv .venv311
 ```
 
 The setup and run scripts work from any folder because they locate the extracted project themselves.
+If `py -3.11` is unavailable but Python 3.11 is installed, the setup script
+also checks `python3.11` and `python`. You can select an interpreter explicitly
+with `.\setup_windows.ps1 -PythonExecutable (Get-Command python).Source`.
+The selected interpreter must report Python 3.11; the virtual environment is
+still created inside the extracted project.
 
 ## Ubuntu Linux or WSL2 — Python 3.11–3.13
 
@@ -49,6 +54,10 @@ In **02 Documents & AI**, import the clearly labelled synthetic practice reports
 PDFs must be 25 MB or smaller and contain selectable text. Image-only scans need OCR, which this release does not provide; encrypted, empty and corrupt PDFs show an import error. Uploading the same PDF again reports **Already indexed** and does not duplicate its excerpts. Importing a PDF does not automatically run analysis or call an AI service.
 
 The default data folder is `storage/` inside this extracted project, regardless of the terminal's starting folder. To use another location, set `MARKETINTEL_DATA_DIR` in your shell before launching. `.env.example` lists safe settings but is not loaded automatically. It contains no credentials. Do not copy an old laptop's `storage/` state if it contains private documents or absolute local paths.
+
+For a sourced market case study, follow [the manifest workflow](docs/REAL_DATA_CASE_STUDY.md).
+Real reports and manually checked evaluation questions are supplied separately;
+the ZIP contains only labelled practice documents and synthetic benchmark data.
 
 ## Installing on an internet-disconnected laptop
 

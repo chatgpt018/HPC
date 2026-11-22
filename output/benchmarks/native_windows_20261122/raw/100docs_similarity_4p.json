@@ -1,0 +1,195 @@
+{
+  "operation": "similarity",
+  "documents": 100,
+  "dimensions": 384,
+  "dataset_kind": "SYNTHETIC NUMERICAL BENCHMARK INPUT",
+  "input_sha256": "95d148acc33630a064201dcd150fc6f6a6140595bf29d340db26317d72caeec9",
+  "created_utc": "2026-11-22T11:38:14.481070+00:00",
+  "environment": {
+    "platform": "Windows-10-10.0.26300-SP0",
+    "python": "3.11.9",
+    "cpu_count": 18,
+    "blas_threads": 1
+  },
+  "median_sequential_wall_seconds": 0.0130928999860771,
+  "median_mpi_wall_seconds": 2.545850299997255,
+  "median_speedup": 0.005142839697248191,
+  "median_parallel_efficiency_percent": 0.12857099243120476,
+  "mpi_processes": 4,
+  "repetitions": 3,
+  "parameter": 5,
+  "measurement": "end-to-end wall time including process startup",
+  "note": "MPI speedup is not guaranteed; no simulated values",
+  "work_units": 9900,
+  "work_unit_label": "directed document comparisons",
+  "median_mpi_work_units_per_second": 3888.6811215925277,
+  "median_sequential_work_units_per_second": 756135.0052721392,
+  "summary": {
+    "median_sequential_seconds": 0.0130928999860771,
+    "median_mpi_seconds": 2.545850299997255,
+    "speedup": 0.005142839697248191,
+    "efficiency_percent": 0.1285709924312048,
+    "sequential_docs_per_second": 7637.727325981205,
+    "mpi_docs_per_second": 39.279607288813416,
+    "comparison": "MPI slower",
+    "runtime_definition": "end-to-end wall clock including load, process launch, and result writing"
+  },
+  "runs": [
+    {
+      "run": 1,
+      "sequential_wall_seconds": 0.010007500008214265,
+      "mpi_end_to_end_wall_seconds": 2.4385183999547735,
+      "sequential_compute_seconds": 0.003535499970894307,
+      "mpi_reported_compute_seconds": 0.0030406999867409468,
+      "mpi_rank_cpu_seconds": 0.015625,
+      "mpi_rank_peak_rss_kib": 144540,
+      "sequential_peak_rss_kib": 141496,
+      "speedup_end_to_end": 0.004103926387596613,
+      "parallel_efficiency_percent": 0.10259815968991531,
+      "correct": true,
+      "mpi_stdout": "{\"status\": \"COMPLETED\", \"mode\": \"mpi-real\", \"processes\": 4, \"runtime_seconds\": 0.0030406999867409468, \"rank_allocation\": [{\"rank\": 0, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 0, \"range_stop\": 25, \"cpu_seconds\": 0.015625, \"peak_rss_kib\": 144540}, {\"rank\": 1, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 25, \"range_stop\": 50, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 143316}, {\"rank\": 2, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 50, \"range_stop\": 75, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 142076}, {\"rank\": 3, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 75, \"range_stop\": 100, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 142332}]}\n",
+      "ranks": [
+        {
+          "rank": 0,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 0,
+          "range_stop": 25,
+          "cpu_seconds": 0.015625,
+          "peak_rss_kib": 144540
+        },
+        {
+          "rank": 1,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 25,
+          "range_stop": 50,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 143316
+        },
+        {
+          "rank": 2,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 50,
+          "range_stop": 75,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 142076
+        },
+        {
+          "rank": 3,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 75,
+          "range_stop": 100,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 142332
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "sequential_wall_seconds": 0.0130928999860771,
+      "mpi_end_to_end_wall_seconds": 2.569803000020329,
+      "sequential_compute_seconds": 0.004337899968959391,
+      "mpi_reported_compute_seconds": 0.004366000008303672,
+      "mpi_rank_cpu_seconds": 0.0,
+      "mpi_rank_peak_rss_kib": 142868,
+      "sequential_peak_rss_kib": 141496,
+      "speedup_end_to_end": 0.0050949041564561665,
+      "parallel_efficiency_percent": 0.12737260391140418,
+      "correct": true,
+      "mpi_stdout": "{\"status\": \"COMPLETED\", \"mode\": \"mpi-real\", \"processes\": 4, \"runtime_seconds\": 0.004366000008303672, \"rank_allocation\": [{\"rank\": 0, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 0, \"range_stop\": 25, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 142868}, {\"rank\": 1, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 25, \"range_stop\": 50, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 141860}, {\"rank\": 2, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 50, \"range_stop\": 75, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 142056}, {\"rank\": 3, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 75, \"range_stop\": 100, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 141684}]}\n",
+      "ranks": [
+        {
+          "rank": 0,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 0,
+          "range_stop": 25,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 142868
+        },
+        {
+          "rank": 1,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 25,
+          "range_stop": 50,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 141860
+        },
+        {
+          "rank": 2,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 50,
+          "range_stop": 75,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 142056
+        },
+        {
+          "rank": 3,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 75,
+          "range_stop": 100,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 141684
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "sequential_wall_seconds": 0.014784400002099574,
+      "mpi_end_to_end_wall_seconds": 2.545850299997255,
+      "sequential_compute_seconds": 0.004156699986197054,
+      "mpi_reported_compute_seconds": 0.004173199995420873,
+      "mpi_rank_cpu_seconds": 0.0,
+      "mpi_rank_peak_rss_kib": 142492,
+      "sequential_peak_rss_kib": 141496,
+      "speedup_end_to_end": 0.005807254260832034,
+      "parallel_efficiency_percent": 0.14518135652080086,
+      "correct": true,
+      "mpi_stdout": "{\"status\": \"COMPLETED\", \"mode\": \"mpi-real\", \"processes\": 4, \"runtime_seconds\": 0.004173199995420873, \"rank_allocation\": [{\"rank\": 0, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 0, \"range_stop\": 25, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 142492}, {\"rank\": 1, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 25, \"range_stop\": 50, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 141864}, {\"rank\": 2, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 50, \"range_stop\": 75, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 142036}, {\"rank\": 3, \"hostname\": \"King\", \"rows\": 25, \"range_start\": 75, \"range_stop\": 100, \"cpu_seconds\": 0.0, \"peak_rss_kib\": 142108}]}\n",
+      "ranks": [
+        {
+          "rank": 0,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 0,
+          "range_stop": 25,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 142492
+        },
+        {
+          "rank": 1,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 25,
+          "range_stop": 50,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 141864
+        },
+        {
+          "rank": 2,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 50,
+          "range_stop": 75,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 142036
+        },
+        {
+          "rank": 3,
+          "hostname": "King",
+          "rows": 25,
+          "range_start": 75,
+          "range_stop": 100,
+          "cpu_seconds": 0.0,
+          "peak_rss_kib": 142108
+        }
+      ]
+    }
+  ]
+}

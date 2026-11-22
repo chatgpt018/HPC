@@ -31,6 +31,62 @@ sequential numerical analytics. It is not an actual AWS deployment. The MPI
 branch requires a verified MPI runtime and real rank execution; it fails rather
 than pretending MPI succeeded when unavailable.
 
+### Document ingestion and source trail
+
+```mermaid
+flowchart LR
+  F[PDF / DOCX / CSV] --> V[Type, size and content checks]
+  V --> P[Page, paragraph or CSV row extraction]
+  P --> C[Overlapping text chunks]
+  C --> S[(Local original + hash + metadata + source locations)]
+```
+
+### RAG path and honest offline baseline
+
+```mermaid
+flowchart LR
+  C[(Indexed chunks)] --> E[TF-IDF baseline or optional cached neural vectors]
+  Q[Question] --> R[Rank source passages]
+  E --> R
+  R --> X{Configured local Ollama?}
+  X -->|No| L[Literal evidence and source table]
+  X -->|Yes| G[Grounded generation + numbered citation check]
+  G --> L
+```
+
+### Exact similarity across ranks
+
+```mermaid
+flowchart LR
+  D[Document vectors] --> N[Normalize]
+  N --> B[Rank 0 broadcasts reference matrix]
+  B --> W[Disjoint query rows per MPI rank]
+  W --> T[Exact score cutoff + deterministic top-k]
+  T --> J[Gather and independently compare to Sequential]
+```
+
+### Distributed Lloyd K-Means
+
+```mermaid
+flowchart LR
+  D[Normalized vectors] --> S[Scatter disjoint rows]
+  S --> A[Local assign, centroid sums and counts]
+  A --> R[Allreduce global sums and counts]
+  R --> U[Update shared centroids]
+  U -->|Until convergence| A
+  U --> G[Gather assignments and validate]
+```
+
+### Local application loop
+
+```mermaid
+flowchart LR
+  I[Import and inspect] --> Q[Ask and check sources]
+  Q --> H[Run Sequential or real MPI]
+  H --> O[Open saved results and brief]
+  O --> I
+```
+
 ## B. Planned AWS architecture — NOT implemented/provisioned
 
 ```mermaid

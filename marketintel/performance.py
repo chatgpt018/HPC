@@ -6,7 +6,41 @@ recorded duration and the validated input size.
 from __future__ import annotations
 
 import math
+import os
+import sys
 from statistics import median
+
+
+def peak_rss_kib() -> int:
+    """Best available current-process peak resident memory, or zero if unavailable."""
+    if os.name == 'nt':
+        import ctypes
+        from ctypes import wintypes
+
+        class ProcessMemoryCounters(ctypes.Structure):
+            _fields_ = [('cb', wintypes.DWORD), ('PageFaultCount', wintypes.DWORD),
+                        ('PeakWorkingSetSize', ctypes.c_size_t), ('WorkingSetSize', ctypes.c_size_t),
+                        ('QuotaPeakPagedPoolUsage', ctypes.c_size_t),
+                        ('QuotaPagedPoolUsage', ctypes.c_size_t),
+                        ('QuotaPeakNonPagedPoolUsage', ctypes.c_size_t),
+                        ('QuotaNonPagedPoolUsage', ctypes.c_size_t),
+                        ('PagefileUsage', ctypes.c_size_t), ('PeakPagefileUsage', ctypes.c_size_t)]
+
+        counters = ProcessMemoryCounters()
+        counters.cb = ctypes.sizeof(counters)
+        get_memory = ctypes.windll.psapi.GetProcessMemoryInfo
+        get_memory.argtypes = [wintypes.HANDLE, ctypes.c_void_p, wintypes.DWORD]
+        get_memory.restype = wintypes.BOOL
+        if get_memory(ctypes.windll.kernel32.GetCurrentProcess(), ctypes.byref(counters),
+                      counters.cb):
+            return int(counters.PeakWorkingSetSize // 1024)
+        return 0
+    try:
+        import resource
+    except ImportError:
+        return 0
+    value = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    return value // 1024 if sys.platform == 'darwin' else value
 
 
 def work_units(operation: str, documents: int, *, iterations: int | None = None, clusters: int | None = None) -> tuple[int, str]:

@@ -33,3 +33,17 @@ def test_bad_pdf_has_error(monkeypatch,tmp_path):
     with pytest.raises(ValueError,match='valid, uncorrupted PDF') as error:
         ingest_file(path)
     assert str(tmp_path) not in str(error.value)
+
+
+def test_upload_rejects_false_docx_and_malformed_csv_without_indexing(monkeypatch, tmp_path):
+    from marketintel.storage import records
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'store'))
+    false_word = tmp_path / 'false.docx'
+    false_word.write_bytes(b'not a Word package')
+    with pytest.raises(ValueError, match='valid DOCX'):
+        ingest_file(false_word)
+    bad_csv = tmp_path / 'bad.csv'
+    bad_csv.write_text('a,b\nfirst,second,extra\n', encoding='utf-8')
+    with pytest.raises(ValueError, match='different number of columns'):
+        ingest_file(bad_csv)
+    assert records() == []

@@ -12,7 +12,8 @@ from pathlib import Path
 
 
 def diagnostics() -> dict:
-    required = ['numpy', 'pandas', 'gradio', 'scipy', 'sklearn', 'pymupdf', 'docx', 'plotly']
+    required = ['numpy', 'pandas', 'gradio', 'scipy', 'sklearn', 'threadpoolctl',
+                'pymupdf', 'docx', 'plotly']
     optional = ['mpi4py', 'sentence_transformers', 'pytest']
     packages = {name: _probe_import(name) for name in required + optional if name != 'mpi4py'}
     # Import the extension itself: `import mpi4py` can succeed while MPI.pyd
