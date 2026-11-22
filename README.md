@@ -28,6 +28,37 @@ verified fact. The AWS part in the title describes the final deployment goal;
 this repository currently provides the working local application and tested
 single-host MPI implementation.
 
+### The problem and the idea
+
+Reading many reports manually makes it hard to find the exact passage behind
+an answer or compare documents consistently. This app keeps each extracted
+passage linked to its original file and page, paragraph, or CSV row. It then
+uses those passages for **two separate tasks**: finding evidence for a question
+and converting each document into numbers for similarity or clustering.
+
+The title names three parts of the intended project:
+
+- **RAG (retrieval-augmented generation):** the default, fully local path
+  retrieves relevant text and displays literal citations. It does not call an
+  LLM. Generation becomes available only if the user separately installs and
+  selects a local Ollama model. Thus the default output is **evidence**, not an
+  AI-written answer.
+- **HPC (high-performance computing):** the same numerical document workload
+  has a Sequential reference and a genuine MPI implementation for multiple
+  processes. A tiny collection is useful for correctness demonstrations but
+  can be *slower* with MPI because launching processes has a cost.
+- **AWS:** the academic deployment target. The current application runs on a
+  laptop without AWS credentials; it does not claim a deployed cluster, S3,
+  Bedrock, or multi-machine result.
+
+```text
+PDF / DOCX / CSV
+    -> validate and extract text with source locations
+    -> save overlapping passages in local storage/
+    -> question -> local retrieval -> cited evidence
+    -> document vectors -> similarity or K-Means -> saved result and report
+```
+
 | What you do | What the code does | What you see |
 |---|---|---|
 | Upload a PDF, Word file or CSV | [documents.py](marketintel/documents.py) validates the file (25 MB maximum), extracts pages, paragraphs or rows, and splits text into overlapping passages with source locations. [storage.py](marketintel/storage.py) saves the local index. | File name, passage count, page/row excerpts and topic words. A scanned PDF needs OCR before import. |
@@ -36,6 +67,46 @@ single-host MPI implementation.
 | Group at least two documents | [analysis.py](marketintel/analysis.py) runs seeded Lloyd K-Means on those document vectors. | A cluster number for each document. The numbers are arbitrary groups, not industry labels. |
 | Choose **Real MPI** (optional) | [jobs.py](marketintel/jobs.py) launches `mpiexec`; [mpi_tasks.py](marketintel/mpi_tasks.py) distributes rows across real ranks and checks the result against sequential computation. | Rank/process metadata and measured runtime, or a clear error if MPI is unavailable. No simulated MPI fallback is used. |
 | Open **Results & Reports** | [provenance.py](marketintel/provenance.py) attaches document IDs, feature type and a SHA-256 input fingerprint; the UI reads saved JSON and creates a deterministic research brief. | A result table/chart, calculation receipt, JSON download and source-aware Markdown brief. |
+
+Implementation details: PDF extraction uses PyMuPDF, Word extraction uses
+`python-docx`, and CSV extraction keeps row numbers. Passages have up to **180
+words** with **35 words of overlap**, so a sentence near a boundary is less
+likely to be lost. Default retrieval fits TF-IDF to the indexed passages,
+including one- and two-word terms, then ranks positive cosine scores. Default
+analytics uses a reproducible **384-feature hashing vector per document**.
+Similarity excludes a document matching itself; K-Means uses a fixed seed.
+Results keep document IDs, the feature type, an input fingerprint, actual
+runtime, and real MPI rank details when MPI was used. The optional CSV market
+metrics tool accepts only rows with explicit `market,year,value,unit,region,currency`
+columns and labels the source row. No values are guessed from prose.
+
+### What a first demonstration looks like
+
+1. Install and launch the app using [QUICK_START.md](QUICK_START.md). Open the
+   four-tab dashboard at `http://127.0.0.1:7860`.
+2. In **Documents & AI**, expand **No reports yet? Load practice data**, then
+   choose **Load clearly labeled synthetic examples**. This adds nine fictional
+   practice reports and their passage counts to the indexed library. Select
+   one to read its extracted row text.
+3. Ask a specific question such as *Which report discusses solar modules and
+   silicon wafers?* Click **Find evidence**. The response shows the matching
+   filename, source row, relevance score, and excerpt. With a vague question,
+   use the preview's topic words to make the question more specific.
+4. In **HPC Analytics**, keep **Sequential**, choose exact similarity, and click
+   **Run computed analysis**. The output lists document pairs and cosine
+   scores. Try K-Means to see a group number for each document. One uploaded
+   PDF alone can be searched, but comparison and clustering need at least two
+   indexed documents.
+5. In **Results & Reports**, inspect the saved run, its chart and metadata,
+   then prepare the JSON result or source-aware Markdown brief. These outputs
+   describe calculations on the uploaded text, not a forecast.
+
+The **Overview** tab shows actual counts for indexed documents, passages,
+saved results, and verified MPI jobs. The separate market-metrics tool in
+**Results & Reports** calculates growth only from uploaded CSVs with the
+required numeric columns. MPI benchmarks appear only after real experiments
+have been saved. Optional Ollama or semantic models are not required for this
+first demonstration.
 
 **Why it is useful:** the app keeps the passage behind an answer, the documents
 behind a numerical score, and the exact input behind a saved run. This makes a
@@ -135,12 +206,13 @@ Without a model, the application does *not* pretend to generate AI prose.
 
 ## 3. First demonstration with safe sample data
 
-```powershell
-python scripts/create_demo.py
-```
+The nine synthetic CSV files are already bundled in `examples/synthetic_reports`.
+They can be regenerated with `scripts/create_demo.py` if needed; a normal demo
+does not require that command.
 
-1. Import at least three files in `examples/synthetic_reports` through
-   **02 Documents & AI**. These files are **synthetic practice samples**, not
+1. In **02 Documents & AI**, expand **No reports yet? Load practice data** and
+   import the labelled examples, or choose at least three files in
+   `examples/synthetic_reports`. These are **synthetic practice samples**, not
    actual market studies.
 2. Select a document under **Read what was extracted**. Use a suggested topic to ask a question, then inspect the source filename and page/row in the evidence table.
 3. Open **03 HPC Analytics** and run **Sequential** similarity or K-Means.
