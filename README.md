@@ -19,6 +19,37 @@ evidence. It distinguishes the verified local build from the pending AWS stage.
 > similarity and K-Means were verified on one WSL2 host using synthetic
 > inputs. AWS and multi-node verification remain independent acceptance steps.
 
+## Explain the project to a friend
+
+This is a **local research workbench** for reading several market documents and
+checking how their text relates. It helps a student find evidence and reproduce
+calculations. It does not predict markets or turn an uploaded claim into a
+verified fact. The AWS part in the title describes the final deployment goal;
+this repository currently provides the working local application and tested
+single-host MPI implementation.
+
+| What you do | What the code does | What you see |
+|---|---|---|
+| Upload a PDF, Word file or CSV | [documents.py](marketintel/documents.py) validates the file (25 MB maximum), extracts pages, paragraphs or rows, and splits text into overlapping passages with source locations. [storage.py](marketintel/storage.py) saves the local index. | File name, passage count, page/row excerpts and topic words. A scanned PDF needs OCR before import. |
+| Ask a question | [vectors.py](marketintel/vectors.py) scores passages with local TF-IDF and cosine similarity; [rag.py](marketintel/rag.py) returns literal excerpts with filenames and locations. | A source-backed evidence table. The default mode does not generate an AI answer; an optional installed Ollama model can do that locally. |
+| Compare at least two documents | [vectors.py](marketintel/vectors.py) makes one 384-feature hashing vector per document; [analysis.py](marketintel/analysis.py) calculates exact cosine top-k matches. | Matching document pairs and similarity scores. A high score means text-feature closeness, not market success. |
+| Group at least two documents | [analysis.py](marketintel/analysis.py) runs seeded Lloyd K-Means on those document vectors. | A cluster number for each document. The numbers are arbitrary groups, not industry labels. |
+| Choose **Real MPI** (optional) | [jobs.py](marketintel/jobs.py) launches `mpiexec`; [mpi_tasks.py](marketintel/mpi_tasks.py) distributes rows across real ranks and checks the result against sequential computation. | Rank/process metadata and measured runtime, or a clear error if MPI is unavailable. No simulated MPI fallback is used. |
+| Open **Results & Reports** | [provenance.py](marketintel/provenance.py) attaches document IDs, feature type and a SHA-256 input fingerprint; the UI reads saved JSON and creates a deterministic research brief. | A result table/chart, calculation receipt, JSON download and source-aware Markdown brief. |
+
+**Why it is useful:** the app keeps the passage behind an answer, the documents
+behind a numerical score, and the exact input behind a saved run. This makes a
+classroom demonstration repeatable and lets you compare sequential work with
+genuine parallel work. For a first demo, use the labelled synthetic practice
+reports. For academic market claims, replace them with real cited reports and
+check the sources yourself.
+
+**Run it:** follow [QUICK_START.md](QUICK_START.md) for Windows or Ubuntu/WSL2.
+Start with the local **Sequential** mode. One indexed PDF is enough to inspect
+and search; similarity and clustering need at least two documents. The commands
+in that guide run the environment doctor, all tests, an offline end-to-end
+check, and then the Gradio dashboard at `http://127.0.0.1:7860`.
+
 
 ## v0.5 academic engineering upgrades
 

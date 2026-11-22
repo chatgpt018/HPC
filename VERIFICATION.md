@@ -2,6 +2,14 @@
 
 **Official title:** AI-Powered Market Intelligence & Document Analysis using RAG + HPC on AWS
 
+## Local recheck — 2026-11-22
+
+- Windows Python 3.11.9: `scripts/doctor.py` reported a healthy core environment on a sequential recheck; `import pymupdf` succeeded. An earlier concurrent doctor/smoke invocation gave a transient PyMuPDF import error; no package change was needed.
+- Full pytest suite: **50 passed**. `scripts/verify_local.py`: **PASS** with three temporary synthetic PDF/DOCX/CSV documents, source retrieval, sequential similarity and K-Means. `pip check`: no broken requirements.
+- `run_windows.ps1` served the Gradio dashboard on a temporary localhost port with **HTTP 200** and the unchanged project title. The temporary test instance was stopped afterward.
+- The updated portable ZIP was extracted into a new temporary folder. The documented `setup_windows.ps1` command created a fresh Python 3.11.9 environment from the package registry (including Gradio 6.32.0); doctor, **50 tests**, offline smoke test, `pip check`, and `run_windows.ps1` localhost **HTTP 200** all passed. The fresh data folder stayed inside the extraction.
+- Optional Windows `mpi4py.MPI` import remains blocked by Windows Application Control. No genuine MPI, Ubuntu/WSL2, AWS, Ollama model, or second physical laptop was tested in this recheck.
+
 ## Portable release checks (one physical laptop)
 
 - The current portable ZIP, including the project report PDF, was extracted into a new Windows temporary folder. `setup_windows.ps1 -Wheelhouse <folder>` created a fresh Python 3.11.9 environment using only local wheels. The doctor reported all core imports healthy, optional `mpi4py` absent and the default data folder inside the extraction. **50 tests**, the offline PDF/DOCX/CSV smoke test and `pip check` passed. `run_windows.ps1` served the dashboard at localhost with HTTP 200 and the exact project title.
