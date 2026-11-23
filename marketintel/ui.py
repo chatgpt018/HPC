@@ -11,7 +11,7 @@ import gradio as gr
 
 from .ui_actions import (
     overview, upload, table_documents, ask, run_analysis, list_results,
-    inspect_result, result_chart, benchmark_options, show_benchmark,
+    inspect_result, result_chart, load_benchmarks, show_benchmark,
     display_market_metrics, explain_saved_result, download_brief, download_result,
     _latest_results, workspace_quality, import_practice_collection, compute_preview,
     document_options, document_overview, analysis_guidance,
@@ -293,11 +293,14 @@ def build() -> gr.Blocks:
                                 'Negative speedup is a valid experimental result.')
                     with gr.Row():
                         benchmark_file = gr.Dropdown(choices=[], label='Saved real MPI benchmark', scale=5)
-                        gr.Button('↻ Refresh benchmarks', scale=1, min_width=150, variant='secondary').click(
-                            benchmark_options, outputs=benchmark_file,
-                        )
+                        refresh_benchmarks = gr.Button('↻ Refresh benchmarks', scale=1, min_width=150, variant='secondary')
                     benchmark_summary = gr.Markdown()
                     benchmark_plot = gr.Plot()
+                    refresh_benchmarks.click(load_benchmarks,
+                        outputs=[benchmark_file, benchmark_summary, benchmark_plot])
+                    app.load(load_benchmarks, outputs=[benchmark_file, benchmark_summary, benchmark_plot])
+                    benchmark_file.change(show_benchmark, inputs=benchmark_file,
+                                          outputs=[benchmark_summary, benchmark_plot])
                     gr.Button('View measured performance', variant='secondary').click(
                         show_benchmark, inputs=benchmark_file,
                         outputs=[benchmark_summary, benchmark_plot],

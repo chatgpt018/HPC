@@ -1,6 +1,7 @@
 from pathlib import Path
 import numpy as np
 import pytest
+from threadpoolctl import threadpool_limits
 
 from marketintel.analysis import normalize, topk_rows, sequential_similarity, sequential_kmeans
 from marketintel.mpi_tasks import partitions
@@ -34,12 +35,27 @@ def test_topk_partition_matches_full_sort_with_boundary_ties():
     found = topk_rows(ids, normalized, 0, len(ids), k=4, block_size=7)
     for row, doc_id in enumerate(ids):
         left = (row // 7) * 7
-        scores = (normalized[left:min(left + 7, len(ids))] @ normalized.T)[row - left]
+        precise = normalized.astype(np.float64)
+        scores = (precise[left:min(left + 7, len(ids))] @ precise.T)[row - left]
         scores[row] = -np.inf
         expected = sorted((i for i in range(len(ids)) if i != row),
                           key=lambda i: (-scores[i], ids[i]))[:4]
         actual = [item for item in found if item['doc_id'] == doc_id]
         assert [item['similar_doc_id'] for item in actual] == [ids[i] for i in expected]
+
+
+def test_near_tied_similarity_ranking_is_partition_independent():
+    rng = np.random.default_rng(42)
+    n, dimensions = 2000, 384
+    centers = rng.normal(size=(4, dimensions)).astype(np.float32)
+    vectors = centers[np.arange(n) % 4] + rng.normal(0, .3, (n, dimensions)).astype(np.float32)
+    ids = [f'SYNTHETIC-{i:06d}' for i in range(n)]
+    normalized = normalize(vectors)
+    with threadpool_limits(limits=1):
+        full = topk_rows(ids, normalized, 0, n, k=5)
+        partitioned = (topk_rows(ids, normalized, 0, n//2, k=5)
+                       + topk_rows(ids, normalized, n//2, n, k=5))
+    assert full == partitioned
 
 
 def test_topk_zero_vectors():

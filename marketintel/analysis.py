@@ -25,9 +25,13 @@ def topk_rows(ids: list[str], normalized: np.ndarray, start: int, stop: int,
     count = min(k, n - 1)
     if count == 0:
         return result
+    # Float32 matrix multiplication can round near-tied cosine scores in a
+    # partition-dependent way. Score in float64 so Sequential and MPI rank the
+    # same document pairs while keeping the input vectors compact.
+    precise = np.asarray(normalized, dtype=np.float64)
     for left in range(start, stop, block_size):
         right = min(left + block_size, stop)
-        scores = normalized[left:right] @ normalized.T
+        scores = precise[left:right] @ precise.T
         for offset, row in enumerate(range(left, right)):
             scores[offset, row] = -np.inf
             # Partition finds the exact score cutoff in linear expected time.

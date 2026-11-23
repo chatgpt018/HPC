@@ -4,6 +4,7 @@ from pathlib import Path
 
 from marketintel.ui_actions import (
     upload, ask, run_analysis, inspect_result, result_chart, show_benchmark,
+    benchmark_options, load_benchmarks,
     document_options, document_overview, analysis_guidance,
 )
 from marketintel.storage import home, write_json
@@ -141,3 +142,51 @@ def test_benchmark_view_labels_synthetic_input(tmp_path, monkeypatch):
     summary, chart = show_benchmark('synthetic_benchmark_2p.json')
     assert 'SYNTHETIC NUMERICAL BENCHMARK INPUT' in summary
     assert '0.100×' in summary and chart is not None
+
+
+def test_bundled_windows_study_is_visible_without_local_runs(tmp_path, monkeypatch):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'empty-store'))
+    options, summary, chart = load_benchmarks()
+    assert options['value'].startswith('bundled:study:')
+    assert len(options['choices']) >= 2
+    assert 'Historical Windows MPI measurements' in summary
+    assert 'Single host' in summary and '12/12 verified' in summary
+    assert '| similarity | 100 | 384 | 2 | 3 |' in summary
+    assert '0.009×' in summary and '0.44%' in summary
+    assert chart is not None and len(chart.data) == 20
+
+
+def test_larger_bundled_study_displays_measured_scaling(tmp_path, monkeypatch):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'empty-store'))
+    summary, chart = show_benchmark('bundled:study:native_windows_20261122_large')
+    assert 'Historical Windows MPI measurements' in summary
+    assert '8/8 verified' in summary and 'Single host' in summary
+    assert '| similarity | 5,000 | 384 | 4 | 3 |' in summary
+    assert '0.350×' in summary
+    assert chart is not None and len(chart.data) == 20
+
+
+def test_new_local_study_and_csv_fallback_are_distinct(tmp_path, monkeypatch):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'local-store'))
+    bundled = Path(__file__).resolve().parents[1] / 'output' / 'benchmarks' / 'native_windows_20261122'
+    study = home() / 'benchmarks' / 'fresh-study'
+    study.mkdir(parents=True)
+    (study / 'scaling_study.csv').write_bytes((bundled / 'scaling_study.csv').read_bytes())
+    options = benchmark_options()
+    keys = [value for _, value in options['choices']]
+    assert any(key.startswith('bundled:study:') for key in keys)
+    assert 'local:study:fresh-study' in keys
+    summary, chart = show_benchmark('local:study:fresh-study')
+    assert 'New local MPI study' in summary and '12/12 verified' in summary
+    assert chart is not None
+
+
+def test_malformed_or_unlisted_benchmark_cannot_be_displayed(tmp_path, monkeypatch):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'local-store'))
+    study = home() / 'benchmarks' / 'broken'
+    study.mkdir(parents=True)
+    (study / 'scaling_study.json').write_text('{bad json', encoding='utf-8')
+    message, chart = show_benchmark('local:study:broken')
+    assert 'malformed' in message and chart is None
+    message, chart = show_benchmark('../output/benchmarks/native_windows_20261122/scaling_study.json')
+    assert 'selection not found' in message and chart is None

@@ -5,9 +5,14 @@ Evaluate how exact cosine top-k and Lloyd K-Means scale with input size and MPI 
 
 ## On Windows
 
-1. Keep Windows and the original source as-is. Install WSL2 Ubuntu only with your approval.
-2. Inside Ubuntu create a Python virtual environment and install the project plus Open MPI and `mpi4py`.
-3. Verify rank identities before running analytical workloads:
+Native Microsoft MPI was verified on this Windows host on 2026-11-22. With a
+compatible runtime and optional `mpi4py` installed, verify ranks using
+`mpiexec -n 4 .\.venv311\Scripts\python.exe scripts\mpi_check.py` in PowerShell.
+WSL2 Ubuntu with Open MPI is an alternative when installed. In either
+environment, check the runtime with the doctor before benchmarking.
+
+For WSL2 Ubuntu, create a Python virtual environment and install Open MPI and
+`mpi4py`, then verify rank identities before analytical workloads:
 
 ```bash
 python -m scripts.doctor
@@ -28,6 +33,39 @@ python -m scripts.scaling_study --sizes 200,500,1000 --processes 2,4 --operation
 ```
 
 All vector data in these commands is **SYNTHETIC BENCHMARK INPUT**, not evidence about real markets. The script refuses execution if `mpiexec` / `mpirun` is missing; it does not substitute a Python loop for MPI.
+
+## Measured larger Windows study — 2026-11-22
+
+The current host had 18 logical CPUs, 15.61 GiB total RAM and approximately
+3.38 GiB available before launch. We therefore ran 2,000 and 5,000 synthetic
+vectors with 384 features, 2 and 4 native Microsoft MPI ranks, and three
+repetitions. All eight configurations passed full Sequential comparison. The
+same inputs, fixed seed, controlled BLAS threading and saved outputs were used
+for both execution modes. All ranks were on **one Windows host**.
+
+| Documents | Algorithm | Ranks | Sequential median s | MPI median s | Speedup | Efficiency |
+|---:|---|---:|---:|---:|---:|---:|
+| 2,000 | Similarity | 2 | 0.576 | 5.344 | 0.108× | 5.39% |
+| 2,000 | Similarity | 4 | 0.675 | 5.401 | 0.125× | 3.12% |
+| 2,000 | Clustering | 2 | 0.206 | 5.122 | 0.040× | 2.01% |
+| 2,000 | Clustering | 4 | 0.202 | 5.206 | 0.039× | 0.97% |
+| 5,000 | Similarity | 2 | 2.378 | 6.885 | 0.345× | 17.27% |
+| 5,000 | Similarity | 4 | 2.234 | 6.380 | 0.350× | 8.75% |
+| 5,000 | Clustering | 2 | 0.614 | 5.667 | 0.108× | 5.41% |
+| 5,000 | Clustering | 4 | 0.597 | 5.585 | 0.107× | 2.67% |
+
+Runtime, speedup, efficiency, throughput, memory and timing-section charts are
+in the [offline chart file](../output/benchmarks/native_windows_20261122_large/scaling_charts.html).
+The [summary CSV](../output/benchmarks/native_windows_20261122_large/scaling_study.csv),
+[summary JSON](../output/benchmarks/native_windows_20261122_large/scaling_study.json)
+and eight raw records preserve the actual measurements. The earlier
+100/500/1,000-document study remains in `output/benchmarks/native_windows_20261122/`.
+For 5,000-document similarity, measured speedup improved relative to the
+smaller cases but remained below 1. End-to-end MPI launch, load and output
+overhead dominated. The timing section includes computation and collectives;
+isolated communication time and actual CPU utilisation were **not** measured.
+This is a single-host scaling study, not AWS or multi-node evidence. A 10,000-
+document run was deferred because only about 3.38 GiB RAM was available.
 
 ## Fair comparisons
 

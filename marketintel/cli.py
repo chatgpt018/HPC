@@ -24,10 +24,16 @@ def ingest_manifest(manifest: Path, source_dir: Path) -> list[dict]:
         if not reader.fieldnames or not required.issubset(reader.fieldnames):
             raise ValueError(f'Manifest needs columns: {", ".join(sorted(required))}')
         prepared = []
+        seen = set()
         for row_number, row in enumerate(reader, 2):
+            if None in row or any(value is None for value in row.values()):
+                raise ValueError(f'Manifest row {row_number}: columns do not match the header')
             filename = (row.get('filename') or '').strip()
             if not filename or Path(filename).name != filename or Path(filename).suffix.lower() not in ALLOWED:
                 raise ValueError(f'Manifest row {row_number}: use a PDF/DOCX/CSV filename without directories')
+            if filename in seen:
+                raise ValueError(f'Manifest row {row_number}: duplicate filename')
+            seen.add(filename)
             path = source_dir / filename
             if not path.is_file() or not path.resolve().is_relative_to(source_dir.resolve()):
                 raise ValueError(f'Manifest row {row_number}: source file missing: {filename}')
@@ -41,7 +47,10 @@ def ingest_manifest(manifest: Path, source_dir: Path) -> list[dict]:
                 raise ValueError(f'Manifest row {row_number}: {exc}') from exc
             if metadata['source_kind'] == 'unspecified':
                 raise ValueError(f'Manifest row {row_number}: source_kind must be real or synthetic')
-            prepared.append((path, (row.get('industry') or '').strip() or 'Unspecified', metadata))
+            industry = (row.get('industry') or '').strip() or 'Unspecified'
+            if len(industry) > 100 or any(ord(char) < 32 for char in industry):
+                raise ValueError(f'Manifest row {row_number}: industry must be at most 100 printable characters')
+            prepared.append((path, industry, metadata))
     return [ingest_file(path, industry, metadata) for path, industry, metadata in prepared]
 
 

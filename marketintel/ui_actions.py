@@ -2,12 +2,17 @@
 from __future__ import annotations
 
 import json
+import csv
+import math
+import re
+from html import escape
 import uuid
 import statistics
 from pathlib import Path
 
 import gradio as gr
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from .analysis import sequential_kmeans, sequential_similarity
 from .documents import ingest_file
@@ -176,12 +181,23 @@ def ask(question: str, use_ollama: bool):
     try:
         res = answer(question, generate=use_ollama)
         refs = [[p['filename'],p['source'],round(p['score'],3),p['text'][:350]] for p in res['evidence']]
-        label = ('Real local Ollama generation' if res['generated'] else 'Evidence-only, no LLM invocation')
+        if res['mode'] == 'ollama-abstained':
+            label = f'Local Ollama model {res["model"]} consulted; evidence insufficient'
+        elif res['generated']:
+            label = f'Real local Ollama generation · model {res["model"]}'
+        else:
+            label = 'Evidence-only, no LLM invocation'
+        retrieval_name = {'tfidf': 'TF-IDF', 'semantic': 'Semantic embeddings'}.get(
+            res.get('retrieval_mode'), 'Unknown')
+        retrieval = f'**Retrieval:** {retrieval_name}'
         if not refs:
             help_text = ('Read the extracted document preview above and try one of its topic-specific questions.'
                          if records() else 'Index a document first, then ask about its contents.')
-            return f'**Mode:** {label}\n\n**No matching passage.** {help_text}', []
-        return f"**Mode:** {label}\n\n{res['answer']}",refs
+            return f'**Mode:** {label} · {retrieval}\n\n**No matching passage.** {help_text}', []
+        review = ('\n\n**Citation check:** Source numbers refer to retrieved passages; '
+                  'check each generated claim against those passages before using it as a finding.'
+                  if res['generated'] else '')
+        return f"**Mode:** {label} · {retrieval}\n\n{res['answer']}{review}",refs
     except Exception as exc:
         return f'**Could not answer:** {exc}',[]
 
@@ -285,39 +301,190 @@ def result_chart(filename):
 
 
 def benchmark_options():
-    root=home()/'benchmarks'
-    files=sorted(root.rglob('*_benchmark_*p.json'))
-    choices=[str(p.relative_to(root)) for p in files]
-    return gr.update(choices=choices,value=choices[-1] if choices else None)
+    choices=[(label,key) for key,(_,_,label) in _benchmark_files().items()
+             if key.startswith(('bundled:','local:'))]
+    return gr.update(choices=choices,value=choices[0][1] if choices else None)
+
+
+def _benchmark_files():
+    """Resolve only files discovered beneath trusted benchmark roots."""
+    found={}
+    bundled=Path(__file__).resolve().parent.parent/'output'/'benchmarks'
+    local=home()/'benchmarks'
+    for root,prefix in ((bundled,'bundled'),(local,'local')):
+        if not root.is_dir():
+            continue
+        for folder in sorted(root.iterdir()):
+            if not folder.is_dir():
+                continue
+            study=folder/'scaling_study.json'
+            if not study.is_file():
+                study=folder/'scaling_study.csv'
+            if study.is_file() and study.resolve().is_relative_to(root.resolve()):
+                key=f'{prefix}:study:{folder.name}'
+                label=(f'Historical Windows MPI study · {folder.name}' if prefix=='bundled'
+                       else f'Local MPI study · {folder.name}')
+                found[key]=(study,'study',label)
+        if prefix=='local':
+            for path in sorted(root.rglob('*_benchmark_*p.json')):
+                if path.is_file() and path.resolve().is_relative_to(root.resolve()):
+                    name=path.relative_to(root).as_posix()
+                    found[f'local:run:{name}']=(path,'run',f'Local MPI run · {name}')
+                    if '/' not in name:
+                        found[name]=(path,'run',f'Local MPI run · {name}')
+    return found
+
+
+def load_benchmarks():
+    options=benchmark_options()
+    summary,plot=show_benchmark(options['value'])
+    return options,summary,plot
+
+
+def _positive_number(value, name):
+    number=float(value)
+    if not math.isfinite(number) or number <= 0:
+        raise ValueError(f'Invalid {name}')
+    return number
+
+
+def _positive_int(value, name):
+    number=_positive_number(value,name)
+    if not number.is_integer():
+        raise ValueError(f'Invalid {name}')
+    return int(number)
+
+
+def _study_rows(path):
+    if path.suffix=='.csv':
+        with path.open(newline='',encoding='utf-8') as stream:
+            rows=list(csv.DictReader(stream))
+        metadata={}
+    else:
+        record=json.loads(path.read_text(encoding='utf-8'))
+        rows=record['rows']
+        metadata=record
+    if not isinstance(rows,list) or not 0 < len(rows) <= 1000:
+        raise ValueError('Study has no valid rows')
+    cleaned=[]
+    for row in rows:
+        if row['operation'] not in {'similarity','clustering'}:
+            raise ValueError('Invalid algorithm')
+        verified=row['verified'] if isinstance(row['verified'],bool) else row['verified']=='True'
+        item={
+            'operation':row['operation'],
+            'documents':_positive_int(row['documents'],'dataset size'),
+            'dimensions':_positive_int(row['dimensions'],'dimension'),
+            'mpi_processes':_positive_int(row['mpi_processes'],'rank count'),
+            'repetitions':_positive_int(row['repetitions'],'repetitions'),
+            'seq':_positive_number(row['median_sequential_seconds'],'sequential time'),
+            'mpi':_positive_number(row['median_mpi_seconds'],'MPI time'),
+            'speedup':_positive_number(row['speedup'],'speedup'),
+            'efficiency':_positive_number(row['efficiency_percent'],'efficiency'),
+            'seq_throughput':_positive_number(row['sequential_work_units_per_second'],'sequential throughput'),
+            'mpi_throughput':_positive_number(row['mpi_work_units_per_second'],'MPI throughput'),
+            'hosts':str(row.get('hosts_observed','')).strip(),
+            'verified':verified,
+        }
+        if (not math.isclose(item['speedup'],item['seq']/item['mpi'],rel_tol=1e-5) or
+                not math.isclose(item['efficiency'],100*item['speedup']/item['mpi_processes'],rel_tol=1e-5)):
+            raise ValueError('Inconsistent performance metrics')
+        cleaned.append(item)
+    return cleaned,metadata
+
+
+def _study_chart(rows):
+    fig=make_subplots(rows=2,cols=2,subplot_titles=('End-to-end runtime · seconds',
+        'Speedup · Sequential / MPI','Parallel efficiency · %','MPI throughput · work units/s'))
+    groups=sorted({(r['operation'],r['mpi_processes']) for r in rows})
+    for operation,processes in groups:
+        series=sorted((r for r in rows if (r['operation'],r['mpi_processes'])==(operation,processes)),
+                      key=lambda r:r['documents'])
+        x=[r['documents'] for r in series]
+        label=f'{operation} · {processes} ranks'
+        for field in ('seq','mpi'):
+            fig.add_trace(go.Scatter(x=x,y=[r[field] for r in series],mode='lines+markers',
+                name=f'{label} · {field}',legendgroup=f'{label}-{field}',showlegend=True,
+                line=dict(dash='dash' if field=='seq' else 'solid')),row=1,col=1)
+        for row,col,field in ((1,2,'speedup'),(2,1,'efficiency'),(2,2,'mpi_throughput')):
+            fig.add_trace(go.Scatter(x=x,y=[r[field] for r in series],mode='lines+markers',
+                name=label,legendgroup=label,showlegend=False),row=row,col=col)
+    fig.update_xaxes(title_text='Documents')
+    fig.update_layout(template='plotly_white',height=750,
+                      title='Recorded scaling measurements',
+                      margin=dict(l=45,r=25,t=85,b=45))
+    return fig
 
 
 def show_benchmark(filename):
     if not filename:
-        return 'No real MPI benchmark files found. Run `python -m scripts.benchmark` inside WSL2.',None
-    root=(home()/'benchmarks').resolve()
-    path=(root/filename).resolve()
-    if not path.is_relative_to(root) or not path.is_file():
-        return 'Benchmark file not found.',None
-    record=json.loads(path.read_text(encoding='utf-8'))
+        return 'No real MPI benchmark files found. Bundled studies and new local runs appear here after refresh.',None
+    selected=_benchmark_files().get(filename)
+    if selected is None:
+        return 'Benchmark selection not found. Refresh the list and select a saved measurement.',None
+    path,kind,label=selected
+    try:
+        if path.stat().st_size > 5_000_000:
+            raise ValueError('Benchmark file is too large')
+        if kind=='study':
+            rows,_=_study_rows(path)
+            historical=filename.startswith('bundled:')
+            source=('**Historical Windows MPI measurements**' if historical
+                    else '**New local MPI study**')
+            hosts={host.strip() for r in rows for host in re.split(r'[,;]',r['hosts']) if host.strip()}
+            host_note=(f'**Single host:** {escape(next(iter(hosts)))}' if len(hosts)==1
+                       else f'**Recorded hosts:** {len(hosts)}' if hosts else '**Hosts:** not recorded')
+            header=(f'{source} · **Input:** synthetic numerical benchmark · {host_note} · '
+                    f'**Configurations:** {len(rows)} · **Correctness:** '
+                    f'{sum(r["verified"] for r in rows)}/{len(rows)} verified. '
+                    'End-to-end time includes MPI launch and output; speedup below 1 means MPI was slower. '
+                    'Throughput is measured work units per second, not market growth.')
+            table=['| Algorithm | Docs | Dim | Ranks | Reps | Seq s | MPI s | Speedup | Efficiency | Seq/s | MPI/s | Correct |',
+                   '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|']
+            for r in rows:
+                table.append(f'| {r["operation"]} | {r["documents"]:,} | {r["dimensions"]} | '
+                    f'{r["mpi_processes"]} | {r["repetitions"]} | {r["seq"]:.3f} | '
+                    f'{r["mpi"]:.3f} | {r["speedup"]:.3f}× | {r["efficiency"]:.2f}% | '
+                    f'{r["seq_throughput"]:,.0f} | {r["mpi_throughput"]:,.0f} | '
+                    f'{"Verified" if r["verified"] else "Failed"} |')
+            return header+'\n\n'+'\n'.join(table),_study_chart(rows)
+        record=json.loads(path.read_text(encoding='utf-8'))
+        return _show_run_benchmark(record)
+    except (OSError,UnicodeError,ValueError,TypeError,KeyError,json.JSONDecodeError,OverflowError):
+        return 'Saved benchmark is malformed or incomplete. It was not displayed as a verified result.',None
+
+
+def _show_run_benchmark(record):
     runs=record['runs']
-    p=record['mpi_processes']
-    seq=[r['sequential_wall_seconds'] for r in runs]
-    mpi=[r['mpi_end_to_end_wall_seconds'] for r in runs]
+    if not isinstance(runs,list) or not 0<len(runs)<=1000:
+        raise ValueError('Invalid repetitions')
+    p=_positive_int(record['mpi_processes'],'rank count')
+    seq=[_positive_number(r['sequential_wall_seconds'],'sequential time') for r in runs]
+    mpi=[_positive_number(r['mpi_end_to_end_wall_seconds'],'MPI time') for r in runs]
     fig=go.Figure()
     fig.add_trace(go.Bar(name='Sequential',x=[f'Run {i+1}' for i in range(len(runs))],y=seq))
     fig.add_trace(go.Bar(name=f'Real MPI ({p} processes)',x=[f'Run {i+1}' for i in range(len(runs))],y=mpi))
     fig.update_layout(barmode='group',template='plotly_white',height=340,yaxis_title='End-to-end seconds',
                       title='Actual measured runtime (includes process startup)')
-    speed = (record.get('median_speedup') or
-             statistics.median(seq)/statistics.median(mpi))
-    unit=record.get('work_unit_label','work units')
+    speed=_positive_number(record.get('median_speedup',statistics.median(seq)/statistics.median(mpi)),'speedup')
     throughput=record.get('median_mpi_work_units_per_second')
-    perf=(f' · **{throughput:,.0f} {unit}/s**' if throughput is not None else '')
-    kind=record.get('dataset_kind','Input provenance not recorded — inspect the source dataset')
-    return (f"**Real MPI measurement** · **Input: {kind}** · {record['operation']} · {record['documents']} documents · "
-            f"{p} MPI processes · {len(runs)} repetitions · median-based speedup **{speed:.3f}×**"
-            +perf+' · Actual rank evidence recorded. ' +
-            'MPI slowdown is valid. Correctness verified on every saved run.'),fig
+    perf=(f' · **Throughput:** {_positive_number(throughput,"throughput"):,.0f} work units/s'
+          if throughput is not None else ' · **Throughput:** not recorded')
+    kind=escape(str(record.get('dataset_kind','Input provenance not recorded — inspect the source dataset')))
+    operation=record['operation']
+    if operation not in {'similarity','clustering'}:
+        raise ValueError('Invalid algorithm')
+    correctness=('Verified' if all(r.get('correct') is True for r in runs) else
+                 'Failed' if any(r.get('correct') is False for r in runs) else 'Not recorded')
+    dimensions=_positive_int(record['dimensions'],'dimension') if 'dimensions' in record else 'not recorded'
+    documents=_positive_int(record['documents'],'dataset size')
+    return (f'**New local MPI run** · **Input:** {kind} · **Algorithm:** {operation} · '
+            f'**Documents:** {documents} · **Dimension:** {dimensions} · '
+            f'**Ranks:** {p} · **Repetitions:** {len(runs)} · '
+            f'**Sequential:** {statistics.median(seq):.3f} s · **MPI:** {statistics.median(mpi):.3f} s · '
+            f'**Speedup:** {speed:.3f}× · **Efficiency:** {100*speed/p:.2f}%'
+            +perf+f' · **Correctness:** {correctness}. '
+            'End-to-end MPI time includes startup; speedup below 1 is a slowdown.'),fig
 
 
 def display_market_metrics():

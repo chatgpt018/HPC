@@ -9,7 +9,7 @@ import pytest
 from marketintel.cli import ingest_manifest
 from marketintel.documents import ingest_file, validate_source_metadata
 from marketintel.provenance import attach_provenance
-from marketintel.storage import records
+from marketintel.storage import chunks, records
 from marketintel.ui_actions import document_overview
 
 
@@ -70,3 +70,37 @@ def test_duplicate_import_can_add_metadata_but_cannot_replace_it(monkeypatch, tm
         ingest_file(path, source_metadata={'source_kind': 'real', 'publisher': 'Other',
                     'publication_date': '2024-01-02', 'source_type': 'test fixture',
                     'usage_notes': 'fixture'})
+
+
+def test_manifest_can_promote_existing_unclassified_document(monkeypatch, tmp_path):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'store'))
+    source_dir = tmp_path / 'reports'
+    source_dir.mkdir()
+    path = source_dir / 'fixture.csv'
+    path.write_text('topic,detail\nSolar,Sample text only\n', encoding='utf-8')
+    ingest_file(path)
+    manifest = tmp_path / 'manifest.csv'
+    manifest.write_text(
+        'filename,industry,publisher,publication_date,source_type,usage_notes,source_kind\n'
+        'fixture.csv,Energy,Fixture publisher,2024-01-02,filing,Permitted use,real\n',
+        encoding='utf-8')
+    result = ingest_manifest(manifest, source_dir)
+    assert result[0]['status'] == 'Metadata updated'
+    assert records()[0]['industry'] == 'Energy'
+    assert records()[0]['source_kind'] == 'real'
+    assert chunks()[0]['industry'] == 'Energy'
+
+
+def test_manifest_rejects_duplicate_rows_before_indexing(monkeypatch, tmp_path):
+    monkeypatch.setenv('MARKETINTEL_DATA_DIR', str(tmp_path / 'store'))
+    source_dir = tmp_path / 'reports'
+    source_dir.mkdir()
+    (source_dir / 'fixture.csv').write_text('topic\nSolar\n', encoding='utf-8')
+    manifest = tmp_path / 'manifest.csv'
+    row = 'fixture.csv,Energy,Publisher,2024-01-02,filing,Permitted use,real\n'
+    manifest.write_text(
+        'filename,industry,publisher,publication_date,source_type,usage_notes,source_kind\n'
+        + row + row, encoding='utf-8')
+    with pytest.raises(ValueError, match='duplicate filename'):
+        ingest_manifest(manifest, source_dir)
+    assert records() == []

@@ -13,8 +13,9 @@ preserves page or row locations, retrieves relevant passages, and computes
 document similarity or K-Means groups. A Sequential implementation provides a
 reference for a genuine MPI version. On one Windows host, a 12-configuration
 synthetic study with three repetitions per configuration produced correct MPI
-results but negative speedup: median end-to-end speedups ranged from 0.0043×
-to 0.0436×. Default question answering is evidence-only TF-IDF retrieval. A
+results but negative speedup. A second eight-configuration study extended the
+input to 2,000 and 5,000 documents; its median end-to-end speedups ranged from
+0.039× to 0.350×. Default question answering is evidence-only TF-IDF retrieval. A
 local neural model and Ollama generation are optional and were not live tested.
 The AWS architecture is prepared as a handoff, not deployed. The work shows a
 reproducible local foundation and identifies the evidence still required for a
@@ -193,15 +194,18 @@ source ZIP excludes the local virtual environment and personal indexed data.
 
 ## 16. Experimental setup
 
-The latest study ran on one Windows host with Python 3.11.9 and Microsoft MPI
-10.1.12498.52. It used synthetic matrices of 100, 500, and 1,000 documents,
-384 features, 2 and 4 ranks, similarity and clustering, and three repetitions
-per configuration. BLAS threads were limited to one. The primary time is
+Two studies ran on one Windows host with Python 3.11.9 and Microsoft MPI
+10.1.12498.52. The first used synthetic matrices of 100, 500, and 1,000
+documents; the second used 2,000 and 5,000 documents. Both used 384 features,
+2 and 4 ranks, similarity and clustering, and three repetitions per
+configuration. BLAS threads were limited to one. The primary time is
 end-to-end wall time including process launch and result output. The MPI
 section time and per-rank CPU seconds are recorded separately. Each complete
 MPI result was checked against a freshly computed Sequential reference.
 The exact platform, input fingerprint, rank allocation, raw repetitions, and
-summary CSV/JSON are in `output/benchmarks/native_windows_20261122/`.
+summary CSV/JSON are in `output/benchmarks/native_windows_20261122/` and
+`output/benchmarks/native_windows_20261122_large/`. The second study was
+bounded after checking 18 logical CPUs and about 3.38 GiB available RAM.
 
 ## 17. Results and analysis
 
@@ -214,22 +218,33 @@ summary CSV/JSON are in `output/benchmarks/native_windows_20261122/`.
 | 1,000 | similarity | 0.095 | 2.379 | 0.040× | 2.696 | 0.044× |
 | 1,000 | clustering | 0.070 | 4.661 | 0.015× | 5.492 | 0.019× |
 
+The larger study also produced these measured medians:
+
+| Documents | Workload | Sequential 2-rank baseline (s) | MPI 2-rank (s) | 2-rank speedup | MPI 4-rank (s) | 4-rank speedup |
+|---:|---|---:|---:|---:|---:|---:|
+| 2,000 | similarity | 0.576 | 5.344 | 0.108× | 5.401 | 0.125× |
+| 2,000 | clustering | 0.206 | 5.122 | 0.040× | 5.206 | 0.039× |
+| 5,000 | similarity | 2.378 | 6.885 | 0.345× | 6.380 | 0.350× |
+| 5,000 | clustering | 0.614 | 5.667 | 0.108× | 5.585 | 0.107× |
+
 Each rank count had its own measured Sequential baseline; the single baseline
 column displays the 2-rank comparison for compactness. Full precision and all
-timings are in the saved records. All 12 configurations passed correctness.
-Median peak resident memory of the largest rank ranged from 142,868 to
-159,424 KiB. MPI was slower in every tested configuration, mainly because the
+timings are in the saved records. All 20 configurations across both studies
+passed correctness. Median peak resident memory of the largest rank ranged
+from 142,868 to 228,916 KiB. MPI was slower in every tested configuration,
+mainly because the
 measured end-to-end interval includes process startup and data handling while
 these inputs create little compute work. This is an interpretation of the
 timing breakdown, not an isolated causal measurement of communication.
 
 ## 18. Scalability evaluation
 
-The experiment varies input size and ranks, so it supports a limited
-single-host strong-scaling discussion. Similarity work grows approximately
+The experiments vary input size and ranks, so they support a limited
+single-host strong-scaling discussion. For 5,000-document similarity, speedup
+rose to about 0.35×, but remained below 1. Similarity work grows approximately
 with `N(N−1)` directed comparisons; increasing `N` therefore changes work
 faster than a linear document count. Weak scaling, 8-rank runs, and multi-node
-network effects were not measured. The offline charts show time, speedup,
+network effects were not measured. The offline charts for both studies show time, speedup,
 efficiency, throughput, size trends, rank peak memory, and measured MPI
 section versus outside-section time. No extrapolated crossover is claimed.
 
@@ -256,12 +271,12 @@ study has no cloud price or charge because no AWS resource was used.
 
 ## 21. Testing and validation
 
-The latest Windows working tree passed 60 pytest tests, compilation, doctor,
+The latest Windows working tree passed 68 pytest tests, compilation, doctor,
 dependency checks, and an offline PDF/DOCX/CSV smoke test. Tests cover parsing,
 metadata, duplicate detection, retrieval, semantic-index reuse contracts,
 source-citation numbering, vector validation, similarity ties, K-Means,
 market metrics, provenance, UI actions, and failed-MPI publication behavior.
-Four actual Microsoft MPI ranks launched; 12 scaling configurations each
+Four actual Microsoft MPI ranks launched; 20 scaling configurations across two studies each
 passed independent Sequential comparisons. Gradio served HTTP 200 on an
 isolated localhost port. Fresh browser page inspection of this revision did
 not complete because Computer Use stopped before navigation. The previous
@@ -308,4 +323,4 @@ the remaining final-submission tasks.
 3. scikit-learn, [KMeans documentation](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html). The project implements its own seeded Lloyd loop; this link explains the general method.
 4. MPI Forum, [MPI: A Message-Passing Interface Standard, version 4.1](https://www.mpi-forum.org/docs/mpi-4.1/mpi41-report.pdf).
 5. U.S. Securities and Exchange Commission, [EDGAR developer resources](https://www.sec.gov/about/developer-resources). Potential source only; no filings are bundled.
-6. This project's `VERIFICATION.md`, `docs/EXPERIMENT_PROTOCOL.md`, and `output/benchmarks/native_windows_20261122/` contain the actual local commands and measurements reported above.
+6. This project's `VERIFICATION.md`, `docs/EXPERIMENT_PROTOCOL.md`, and both `output/benchmarks/native_windows_20261122/` and `output/benchmarks/native_windows_20261122_large/` contain the actual local commands and measurements reported above.

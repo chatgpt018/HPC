@@ -46,6 +46,18 @@ The command reports actual Hit@k, Recall@k, and no-evidence accuracy for the
 current index. It refuses labels that do not point to indexed source locations.
 It does not score LLM truthfulness, and no real-data scores are prefilled.
 
+## Review a generated answer before citing it
+
+When a local embedding model and Ollama model are installed, save the question,
+retrieval mode, model name, answer, and retrieved passage IDs. For each factual
+claim, open its numbered passage in the original report and mark **supported**,
+**unsupported**, or **unclear**. Recheck every number, unit, year, geography,
+and calculation against the source. Record missing relevant passages and whether
+the model correctly abstained when evidence was insufficient. A valid citation
+number only proves the passage was retrieved; it does not prove the claim is
+true. Do not report a generated answer as verified until a person completes
+this review. No live model review has been completed for this release.
+
 No real documents are bundled. The practice collection and synthetic scaling
 vectors remain teaching and performance inputs, never real market evidence.
 

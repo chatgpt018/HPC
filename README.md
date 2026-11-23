@@ -20,9 +20,9 @@ current audit, measured Windows MPI study, requirement status, and remaining wor
 
 > **Professor's technical requirements:** Genuine HPC workload, real MPI or
 > OpenMP execution, clear HPC necessity, and eventual deployment on AWS.
-> This package completes a tested **local foundation**. Four-rank MPI
-> similarity and K-Means were verified on one WSL2 host using synthetic
-> inputs. AWS and multi-node verification remain independent acceptance steps.
+> This package completes a tested **local foundation**. Genuine four-rank MPI
+> similarity and K-Means were verified on one Windows host, and an earlier
+> revision ran on WSL2. AWS and multi-node verification remain independent steps.
 
 ## Explain the project to a friend
 
@@ -109,8 +109,8 @@ columns and labels the source row. No values are guessed from prose.
 The **Overview** tab shows actual counts for indexed documents, passages,
 saved results, and verified MPI jobs. The separate market-metrics tool in
 **Results & Reports** calculates growth only from uploaded CSVs with the
-required numeric columns. MPI benchmarks appear only after real experiments
-have been saved. Optional Ollama or semantic models are not required for this
+required numeric columns. The Results page includes bundled, historical Windows
+MPI measurements and discovers new local experiments after refresh. Optional Ollama or semantic models are not required for this
 first demonstration.
 
 **Why it is useful:** the app keeps the passage behind an answer, the documents
@@ -158,7 +158,7 @@ an installed Ollama model, cloud deployment or live database. See
 | Real MPI launcher, fail-closed job records and runtime status | Native Windows jobs verified against Sequential; failed candidates stay out of completed Results |
 | Source-aware saved results, charts, deterministic analysis briefs | Implemented; tested |
 | Traceable CSV market metric calculations | Implemented; tested |
-| Real sequential vs MPI benchmark script | 12 Windows configurations, three repetitions each, all correct; measured speedups below 1 and [offline charts](output/benchmarks/native_windows_20261122/scaling_charts.html) |
+| Real sequential vs MPI benchmark script | 20 Windows configurations across two studies, three repetitions each, all correct; measured speedups below 1. See the [larger study charts](output/benchmarks/native_windows_20261122_large/scaling_charts.html) and [experiment protocol](docs/EXPERIMENT_PROTOCOL.md). |
 | Four-section Gradio dashboard | Current revision served localhost HTTP 200; earlier revision browser-checked; fresh visual review stopped before navigation |
 | Real-source case study | Validated manifest import and evaluation workflow ready; real licensed reports not supplied |
 | Docker packaging for local web app | Provided; Docker image build not independently tested |

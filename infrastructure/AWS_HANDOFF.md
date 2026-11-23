@@ -66,3 +66,17 @@ No subnets, credentials, cluster names or successful deployments are implied by 
 clustering. They require real cluster paths, environment modules, queue
 names, storage, and permissions chosen by the student; none are prefilled as
 if a deployment exists.
+
+## Evidence to bring back for the final submission
+
+Record the actual AWS region, service names, EC2 types and node counts,
+matching Python/MPI versions, S3 input and output object keys, input/output
+SHA-256 hashes, Slurm submission command and job ID, and rank-to-host log.
+Capture dated screenshots of the secured app, completed Slurm job, S3 objects,
+and billing view **only after they exist**. Keep stdout/stderr, Sequential
+comparison, wall time, throughput, speedup, efficiency, memory, and the actual
+billed duration and rates together. The S3 contract must distinguish raw
+reports, source metadata, vector input, candidate output, verified output and
+logs, with explicit access and retention rules. After collecting evidence,
+stop the cluster and any idle hosted service, then check for remaining charges.
+No such cloud artifacts are claimed in this local release.

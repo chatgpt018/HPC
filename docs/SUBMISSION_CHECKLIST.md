@@ -5,9 +5,10 @@
 ## Local project evidence
 
 - [x] A clean Windows Python 3.11 environment can install the project.
-- [x] `python -m pytest -q -p no:cacheprovider` passes (60 tests in the latest Windows working tree; see `../VERIFICATION.md`).
+- [x] `python -m pytest -q -p no:cacheprovider` passes (68 tests in the latest Windows working tree; see `../VERIFICATION.md`).
 - [x] `python scripts/verify_local.py` prints `PASS` (offline fixtures).
-- [ ] Gradio launches and supports actual uploaded PDF/DOCX/CSV files.
+- [x] Gradio launches locally (HTTP 200); backend PDF/DOCX/CSV ingestion passes the offline smoke test.
+- [ ] Manually inspect upload, navigation, chart contrast and narrow-screen layout in the current browser UI.
 - [x] Evidence table shows file names and page/paragraph/CSV row locations in tests and the local workflow.
 - [x] One result has genuine document IDs, vector type and dataset SHA-256.
 - [x] Sequential similarity and K-Means generate actual output files; similarity chart was browser-checked.
@@ -21,8 +22,8 @@
 - [x] Equivalent sequential/MPI outputs pass correctness checks.
 - [x] A preliminary range of small workload sizes and rank counts was measured without fake data.
 - [x] Median wall times, speedup and efficiency are reported with raw logs.
-- [x] Current Windows study has 12 verified configurations, three repetitions each, measured memory, and offline charts.
-- [ ] Repeat larger experiments at least three times on the Ubuntu filesystem for defensible scaling conclusions.
+- [x] Current Windows studies have 20 verified configurations, three repetitions each, up to 5,000 synthetic documents, measured rank memory, and offline charts.
+- [ ] Run weak scaling and repeat larger experiments on the target Linux/AWS hardware for broader scaling conclusions.
 - [x] Results/plots distinguish synthetic scaling runs from real-report analysis.
 
 ## AWS — user-owned final stage (NOT completed by this local package)

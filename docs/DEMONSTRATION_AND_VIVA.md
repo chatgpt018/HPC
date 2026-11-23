@@ -28,8 +28,10 @@ AWS deployment is complete.)
    partition ranges. Run or show K-Means `Allreduce` execution logs.
 6. **Results (1 minute):** Explain that similarity is about numerical text
    features, not future market growth. Download a real source-aware brief.
-7. **Benchmark (1 minute):** Compare actual sequential and MPI executions,
-   including any negative speedup. Explain communication/startup overhead.
+7. **Benchmark (1 minute):** In Results & Reports, select the bundled
+   **Historical Windows MPI study**. Show the saved 2,000/5,000-document
+   measurements, correctness status and charts. All ranks were on one host;
+   the best measured speedup was about 0.35×, so explain launch/output overhead.
 8. **AWS (30 seconds):** If deployed, show actual service and Slurm evidence;
    otherwise explain that AWS deployment is a remaining requirement.
 

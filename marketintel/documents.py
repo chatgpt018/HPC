@@ -140,10 +140,21 @@ def ingest_file(path: str | Path, industry: str = 'Unspecified',
         changes = {key: value for key, value in metadata.items()
                    if value and (key != 'source_kind' or value != 'unspecified')
                    and found.get(key) != value}
-        if changes:
-            if any(found.get(key) not in (None, '', 'unspecified') for key in changes):
-                raise ValueError('Already indexed with different source metadata')
+        industry_change = industry != 'Unspecified' and found.get('industry') != industry
+        if any(found.get(key) not in (None, '', 'unspecified') for key in changes):
+            raise ValueError('Already indexed with different source metadata')
+        if industry_change and found.get('industry') not in (None, '', 'Unspecified') \
+                and found.get('source_kind') not in (None, 'unspecified'):
+            raise ValueError('Already indexed with a different industry classification')
+        if changes or industry_change:
             found.update(changes)
+            if industry_change:
+                found['industry'] = industry
+                indexed = chunks()
+                for passage in indexed:
+                    if passage['doc_id'] == doc_id:
+                        passage['industry'] = industry
+                write_json(home() / 'chunks.json', indexed)
             found['content_sha256'] = digest
             write_json(home() / 'documents.json', existing)
             return {'document': found, 'status': 'Metadata updated', 'new_chunks': 0}
